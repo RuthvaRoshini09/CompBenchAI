@@ -1,0 +1,51 @@
+Part_ID,Vehicle_Model,OEM,Subsystem,Part_Name,Material,Manufacturing_Process,Weight_kg,Total_Cost_USD,Design_Complexity,Data_Type
+CB001,Model A,OEM A,Interior,Door Panel,Steel,Stamping,3.5,850.0,Low,Synthetic
+CB002,Model B,OEM B,Interior,Door Panel,Aluminum,Casting,2.27,1062.5,Medium,Synthetic
+CB003,Model C,OEM C,Interior,Door Panel,Plastic,Injection Molding,1.57,552.5,High,Synthetic
+CB004,Model D,OEM D,Interior,Door Panel,Magnesium,Forging,1.93,1275.0,Low,Synthetic
+CB005,Model E,OEM E,Interior,Door Panel,Cast Iron,Stamping,4.02,765.0,Medium,Synthetic
+CB006,Model A,OEM A,Interior,Dashboard Frame,Steel,Casting,5.2,1200.0,Medium,Synthetic
+CB007,Model B,OEM B,Interior,Dashboard Frame,Aluminum,Injection Molding,3.38,1500.0,High,Synthetic
+CB008,Model C,OEM C,Interior,Dashboard Frame,Plastic,Forging,2.34,780.0,Low,Synthetic
+CB009,Model D,OEM D,Interior,Dashboard Frame,Magnesium,Stamping,2.86,1800.0,Medium,Synthetic
+CB010,Model E,OEM E,Interior,Dashboard Frame,Cast Iron,Casting,5.98,1080.0,High,Synthetic
+CB011,Model A,OEM A,Braking,Brake Pedal,Steel,Injection Molding,1.4,450.0,High,Synthetic
+CB012,Model B,OEM B,Braking,Brake Pedal,Aluminum,Forging,0.91,562.5,Low,Synthetic
+CB013,Model C,OEM C,Braking,Brake Pedal,Plastic,Stamping,0.63,292.5,Medium,Synthetic
+CB014,Model D,OEM D,Braking,Brake Pedal,Magnesium,Casting,0.77,675.0,High,Synthetic
+CB015,Model E,OEM E,Braking,Brake Pedal,Cast Iron,Injection Molding,1.61,405.0,Low,Synthetic
+CB016,Model A,OEM A,Suspension,Control Arm,Steel,Forging,4.8,1500.0,Low,Synthetic
+CB017,Model B,OEM B,Suspension,Control Arm,Aluminum,Stamping,3.12,1875.0,Medium,Synthetic
+CB018,Model C,OEM C,Suspension,Control Arm,Plastic,Casting,2.16,975.0,High,Synthetic
+CB019,Model D,OEM D,Suspension,Control Arm,Magnesium,Injection Molding,2.64,2250.0,Low,Synthetic
+CB020,Model E,OEM E,Suspension,Control Arm,Cast Iron,Forging,5.52,1350.0,Medium,Synthetic
+CB021,Model A,OEM A,Electrical,Battery Bracket,Steel,Stamping,2.1,650.0,Medium,Synthetic
+CB022,Model B,OEM B,Electrical,Battery Bracket,Aluminum,Casting,1.37,812.5,High,Synthetic
+CB023,Model C,OEM C,Electrical,Battery Bracket,Plastic,Injection Molding,0.95,422.5,Low,Synthetic
+CB024,Model D,OEM D,Electrical,Battery Bracket,Magnesium,Forging,1.16,975.0,Medium,Synthetic
+CB025,Model E,OEM E,Electrical,Battery Bracket,Cast Iron,Stamping,2.42,585.0,High,Synthetic
+CB026,Model A,OEM A,Seating,Seat Frame,Steel,Casting,8.0,1800.0,High,Synthetic
+CB027,Model B,OEM B,Seating,Seat Frame,Aluminum,Injection Molding,5.2,2250.0,Low,Synthetic
+CB028,Model C,OEM C,Seating,Seat Frame,Plastic,Forging,3.6,1170.0,Medium,Synthetic
+CB029,Model D,OEM D,Seating,Seat Frame,Magnesium,Stamping,4.4,2700.0,High,Synthetic
+CB030,Model E,OEM E,Seating,Seat Frame,Cast Iron,Casting,9.2,1620.0,Low,Synthetic
+CB031,Model A,OEM A,Powertrain,Engine Mount,Steel,Injection Molding,2.8,900.0,Low,Synthetic
+CB032,Model B,OEM B,Powertrain,Engine Mount,Aluminum,Forging,1.82,1125.0,Medium,Synthetic
+CB033,Model C,OEM C,Powertrain,Engine Mount,Plastic,Stamping,1.26,585.0,High,Synthetic
+CB034,Model D,OEM D,Powertrain,Engine Mount,Magnesium,Casting,1.54,1350.0,Low,Synthetic
+CB035,Model E,OEM E,Powertrain,Engine Mount,Cast Iron,Injection Molding,3.22,810.0,Medium,Synthetic
+CB036,Model A,OEM A,Exterior,Bumper Support,Steel,Forging,3.9,1100.0,Medium,Synthetic
+CB037,Model B,OEM B,Exterior,Bumper Support,Aluminum,Stamping,2.54,1375.0,High,Synthetic
+CB038,Model C,OEM C,Exterior,Bumper Support,Plastic,Casting,1.75,715.0,Low,Synthetic
+CB039,Model D,OEM D,Exterior,Bumper Support,Magnesium,Injection Molding,2.15,1650.0,Medium,Synthetic
+CB040,Model E,OEM E,Exterior,Bumper Support,Cast Iron,Forging,4.48,990.0,High,Synthetic
+CB041,Model A,OEM A,Steering,Steering Bracket,Steel,Stamping,1.8,700.0,High,Synthetic
+CB042,Model B,OEM B,Steering,Steering Bracket,Aluminum,Casting,1.17,875.0,Low,Synthetic
+CB043,Model C,OEM C,Steering,Steering Bracket,Plastic,Injection Molding,0.81,455.0,Medium,Synthetic
+CB044,Model D,OEM D,Steering,Steering Bracket,Magnesium,Forging,0.99,1050.0,High,Synthetic
+CB045,Model E,OEM E,Steering,Steering Bracket,Cast Iron,Stamping,2.07,630.0,Low,Synthetic
+CB046,Model A,OEM A,Electrical,Motor Housing,Steel,Casting,4.5,1600.0,Low,Synthetic
+CB047,Model B,OEM B,Electrical,Motor Housing,Aluminum,Injection Molding,2.93,2000.0,Medium,Synthetic
+CB048,Model C,OEM C,Electrical,Motor Housing,Plastic,Forging,2.02,1040.0,High,Synthetic
+CB049,Model D,OEM D,Electrical,Motor Housing,Magnesium,Stamping,2.48,2400.0,Low,Synthetic
+CB050,Model E,OEM E,Electrical,Motor Housing,Cast Iron,Casting,5.17,1440.0,Medium,Synthetic
