@@ -67,7 +67,8 @@ def test_ui_improvements():
     # 2. COST DIFFERENCE IN PRIMARY INR & SECONDARY USD
     print("\n--- 2. Cost Difference Primary INR & Secondary USD ---")
     assert "formatInrPrimary" in js, "formatInrPrimary missing in app.js"
-    assert 'id="kpi-cost-secondary"' in html, "kpi-cost-secondary missing in index.html"
+    assert 'id="spec-a-cost-inr"' in html, "spec-a-cost-inr missing in index.html"
+    assert 'id="spec-b-cost-inr"' in html, "spec-b-cost-inr missing in index.html"
 
     # Test illustrative math: $212.50 * 85 = 18062.5 -> +₹18,062.50 (estimated)
     rate = 85.0
@@ -94,23 +95,21 @@ def test_ui_improvements():
     assert 'style="display: none;"' in html.split('id="guide-panel"')[1][:100], "Guide panel should be collapsed by default"
     print("  [OK] Benchmarking guide is compact and collapsed by default with toggle control")
 
-    # 4. STANDARDIZED 3 GRAPH CARDS
-    print("\n--- 4. Standardization of 3 Graph Cards ---")
-    assert 'id="weightChart"' in html and 'id="costChart"' in html and 'id="materialChart"' in html
-    assert "indexAxis" in js and '"y"' in js, "Weight chart must be horizontal bar chart"
-    assert "doughnut" in js, "Material chart must remain a doughnut chart"
-    print("  [OK] Graph 1: Horizontal Mass Bar Chart verified")
-    print("  [OK] Graph 2: Cost Bar Chart in estimated INR verified")
-    print("  [OK] Graph 3: Fleet Material Doughnut Chart preserved")
+    # 4. COMPONENT MASS BENCHMARKING GRAPH (LINE CHART)
+    print("\n--- 4. Component Mass Benchmarking Graph ---")
+    assert 'id="weightChart"' in html, "weightChart missing in index.html"
+    assert 'type: "line"' in js or '"line"' in js, "Weight chart must be line chart"
+    assert "tension: 0" in js, "Line chart must use straight connecting line without smoothing"
+    assert "circle" in js, "Line chart must display circular data-point markers"
+    print("  [OK] Graph: Component Mass Line Chart with circular markers & straight connecting line verified")
 
-    # 5. COMPARISON SUMMARY BAR
-    print("\n--- 5. Compact Comparison Summary Bar ---")
-    assert 'id="comparison-summary-bar"' in html, "comparison-summary-bar missing in index.html"
-    assert 'id="summary-component-pair"' in html, "summary-component-pair missing in index.html"
-    assert 'id="summary-weight-val"' in html, "summary-weight-val missing in index.html"
-    assert 'id="summary-cost-inr-val"' in html, "summary-cost-inr-val missing in index.html"
-    assert 'id="summary-cost-usd-val"' in html, "summary-cost-usd-val missing in index.html"
-    print("  [OK] Compact Comparison Summary bar present above charts with verified engine values")
+    # 5. COMPARISON HEADER & STATUS
+    print("\n--- 5. Clean Comparison Header ---")
+    assert 'id="results-comparison-heading"' in html, "results-comparison-heading missing in index.html"
+    assert 'id="results-title-a"' in html, "results-title-a missing in index.html"
+    assert 'id="results-title-b"' in html, "results-title-b missing in index.html"
+    assert 'id="comparison-status-pill"' in html, "comparison-status-pill missing in index.html"
+    print("  [OK] Clean Comparison Header with verified component titles and status pill")
 
     # 6. RAG SECTION COMPACT REFERENCES & MODALS
     print("\n--- 6. RAG Context & KPI Modals ---")
@@ -120,22 +119,17 @@ def test_ui_improvements():
     print("  [OK] RAG compact reference cards with expandable passage details verified")
     print("  [OK] Component Catalog and Dataset Info modals verified")
 
-    # 7. AI ENGINEERING REPORT SHORTENING & ACCURACY (SEAT FRAME BENCHMARK)
-    print("\n--- 7. AI Engineering Intelligence Report Improvements ---")
-    # Verify 5 concise section container IDs in HTML
-    assert 'id="rep-summary"' in html, "rep-summary missing in index.html"
-    assert 'id="rep-weight"' in html, "rep-weight missing in index.html"
-    assert 'id="rep-cost"' in html, "rep-cost missing in index.html"
-    assert 'id="rep-material"' in html, "rep-material missing in index.html"
-    assert 'id="rep-considerations-conclusion"' in html, "rep-considerations-conclusion missing in index.html"
-    assert 'full-width' in html, "full-width styling class missing in index.html"
-    print("  [OK] 5 concise report section cards verified in index.html")
+    # 7. TECHNICAL SPECIFICATIONS COMPARISON & SEAT FRAME BENCHMARK
+    print("\n--- 7. Technical Specifications & Benchmark Accuracy ---")
+    assert 'id="specs-table-body"' in html, "specs-table-body missing in index.html"
+    assert 'id="spec-card-comp-a"' in html and 'id="spec-card-comp-b"' in html, "Spec cards missing in index.html"
+    print("  [OK] Side-by-side technical specification cards & comparison table verified")
 
-    # Verify fallback badge and text in HTML & JS
-    assert "Deterministic Engineering Report" in html and "Deterministic Engineering Report" in js
+    # Verify fallback text in JS
+    assert "Deterministic Engineering Report" in js
     assert "View Reference" in js, "'View Reference' expand button missing in app.js"
     assert "renderMarkdownBasic" in js and "stripMarkdown" in js
-    print("  [OK] Deterministic Engineering Report badge & View Reference expander verified")
+    print("  [OK] Deterministic Engineering Report badge & View Reference expander verified in app.js")
 
     # Test Seat Frame benchmark example: CB030 vs CB026
     seat_compare = compare(ComparisonRequest(component_a_id="CB030", component_b_id="CB026"))
@@ -170,16 +164,15 @@ def test_ui_improvements():
 
     # 8. GEMINI PROVIDER STATUS & FALLBACK INTEGRITY
     print("\n--- 8. Gemini Provider Status & Fallback Verification ---")
-    assert 'class="ai-badge fallback">Deterministic Engineering Report</span>' in html
     assert "isGeminiSuccess" in js, "isGeminiSuccess check missing in app.js"
     assert 'insight.status === "success"' in js, "Must verify insight.status === 'success' before showing Live AI"
     assert "Deterministic Engineering Report" in js, "Deterministic fallback status missing in app.js"
 
-    # Verify searchable dropdowns and option formatting
+    # Verify searchable dropdowns and decision panel
     assert 'id="search-comp-a"' in html and 'id="search-comp-b"' in html, "Search inputs missing in index.html"
     assert "filterSelectorOptions" in js, "filterSelectorOptions missing in app.js"
-    assert "5. Engineering Conclusion" in html, "5. Engineering Conclusion title missing in index.html"
-    print("  [OK] Searchable component dropdowns and '5. Engineering Conclusion' section verified")
+    assert 'id="tradeoff-decision-panel"' in html, "tradeoff-decision-panel missing in index.html"
+    print("  [OK] Searchable component dropdowns and Engineering Decision Summary verified")
 
     # Test backend provider status when API key is missing (current environment)
     from services.llm_engine import generate_engineering_insight

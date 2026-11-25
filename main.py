@@ -1,13 +1,16 @@
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from services.component_engine import (
     get_all_components,
-    compare_components
+    compare_components,
+    compute_tradeoff_analysis
 )
+from services.material_engine import get_material_intelligence
 from services.rag_engine import retrieve_knowledge
 from services.llm_engine import generate_engineering_insight
 
@@ -17,6 +20,15 @@ app = FastAPI(
     title="CompBench AI",
     description="Automotive Component Benchmarking API",
     version="1.0.0"
+)
+
+# Enable CORS for browser access from local interfaces (127.0.0.1, localhost, LAN)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount frontend static assets
@@ -30,6 +42,16 @@ class ComparisonRequest(BaseModel):
 
 class KnowledgeQueryRequest(BaseModel):
     query: str
+    top_k: int = 3
+
+
+class MaterialIntelligenceRequest(BaseModel):
+    material_a: str
+    material_b: str
+    process_a: str = "Stamping"
+    process_b: str = "Stamping"
+    component_a_id: str = None
+    component_b_id: str = None
     top_k: int = 3
 
 
@@ -87,6 +109,30 @@ def get_knowledge(request: KnowledgeQueryRequest):
     return retrieve_knowledge(
         request.query,
         request.top_k
+    )
+
+
+@app.post("/material-intelligence")
+def material_intelligence_endpoint(request: MaterialIntelligenceRequest):
+    comp_a = None
+    comp_b = None
+    if request.component_a_id and request.component_b_id:
+        try:
+            comparison = compare_components(request.component_a_id, request.component_b_id)
+            comp_a = comparison.get("component_a")
+            comp_b = comparison.get("component_b")
+        except Exception:
+            pass
+
+    return get_material_intelligence(
+        material_a=request.material_a,
+        material_b=request.material_b,
+        process_a=request.process_a,
+        process_b=request.process_b,
+        component_a=comp_a,
+        component_b=comp_b,
+        query_rag=True,
+        rag_top_k=request.top_k
     )
 
 

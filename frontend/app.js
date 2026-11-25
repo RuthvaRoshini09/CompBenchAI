@@ -8,6 +8,8 @@ let lastComparisonData = null;
 let weightChartInstance = null;
 let costChartInstance = null;
 let materialChartInstance = null;
+let expandedChartInstance = null;
+let currentExpandedChartType = null;
 
 /**
  * Configurable USD to INR conversion rate for automotive engineering estimations.
@@ -72,13 +74,19 @@ const selectionValidationMsg = document.getElementById("selection-validation-msg
 const btnToggleGuide = document.getElementById("btn-toggle-guide");
 const guidePanel = document.getElementById("guide-panel");
 
-// Initialize application on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
+// Initialize application on DOM ready or immediately if already loaded
+function startApp() {
   initTheme();
   initDashboard();
   setupEventListeners();
   setupKpiNavigation();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startApp);
+} else {
+  startApp();
+}
 
 /* =========================================================
    1. Theme Management (Light & Dark Modes)
@@ -132,15 +140,17 @@ function getChartThemeColors() {
 function updateAllChartsTheme() {
   const themeColors = getChartThemeColors();
 
-  [weightChartInstance, costChartInstance].forEach(chart => {
+  [weightChartInstance, costChartInstance, materialChartInstance, expandedChartInstance].forEach(chart => {
     if (chart && chart.options && chart.options.scales) {
       if (chart.options.scales.x) {
-        chart.options.scales.x.grid.color = themeColors.grid;
-        chart.options.scales.x.ticks.color = themeColors.text;
+        if (chart.options.scales.x.grid) chart.options.scales.x.grid.color = themeColors.grid;
+        if (chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = themeColors.text;
+        if (chart.options.scales.x.title) chart.options.scales.x.title.color = themeColors.text;
       }
       if (chart.options.scales.y) {
-        chart.options.scales.y.grid.color = themeColors.grid;
-        chart.options.scales.y.ticks.color = themeColors.text;
+        if (chart.options.scales.y.grid) chart.options.scales.y.grid.color = themeColors.grid;
+        if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = themeColors.text;
+        if (chart.options.scales.y.title) chart.options.scales.y.title.color = themeColors.text;
       }
       if (chart.options.plugins && chart.options.plugins.tooltip) {
         chart.options.plugins.tooltip.backgroundColor = themeColors.tooltipBg;
@@ -151,19 +161,6 @@ function updateAllChartsTheme() {
       chart.update();
     }
   });
-
-  if (materialChartInstance && materialChartInstance.options) {
-    if (materialChartInstance.options.plugins && materialChartInstance.options.plugins.legend) {
-      materialChartInstance.options.plugins.legend.labels.color = themeColors.text;
-    }
-    if (materialChartInstance.options.plugins && materialChartInstance.options.plugins.tooltip) {
-      materialChartInstance.options.plugins.tooltip.backgroundColor = themeColors.tooltipBg;
-      materialChartInstance.options.plugins.tooltip.titleColor = themeColors.tooltipText;
-      materialChartInstance.options.plugins.tooltip.bodyColor = themeColors.tooltipText;
-      materialChartInstance.options.plugins.tooltip.borderColor = themeColors.tooltipBorder;
-    }
-    materialChartInstance.update();
-  }
 }
 
 /* =========================================================
@@ -178,6 +175,10 @@ async function initDashboard() {
       throw new Error(`Failed to load components: HTTP ${response.status}`);
     }
     allComponents = await response.json();
+
+    if (!Array.isArray(allComponents) || allComponents.length === 0) {
+      throw new Error("Component dataset returned from API is empty.");
+    }
 
     updateDashboardMetrics(allComponents);
     populateDropdowns();
@@ -200,6 +201,22 @@ async function initDashboard() {
   } catch (error) {
     console.error("Dashboard initialization error:", error);
     showAlert(`Error loading component database: ${error.message}`, true, "error");
+
+    // Clear loading state and show explicit error message in both selectors
+    if (selectCompA) {
+      selectCompA.innerHTML = '<option value="" disabled selected>⚠️ Error loading components. Check API connection.</option>';
+    }
+    if (selectCompB) {
+      selectCompB.innerHTML = '<option value="" disabled selected>⚠️ Error loading components. Check API connection.</option>';
+    }
+
+    // Reflect loading failure in KPI summary cards
+    const totalElem = document.getElementById("kpi-total-components");
+    if (totalElem) totalElem.textContent = "Error";
+    const matElem = document.getElementById("kpi-material-types");
+    if (matElem) matElem.textContent = "--";
+    const weightElem = document.getElementById("kpi-avg-weight");
+    if (weightElem) weightElem.textContent = "-- kg";
   }
 }
 
@@ -334,6 +351,9 @@ function setupEventListeners() {
       populateDropdowns();
     });
   });
+
+  // Interactive Chart Toolbars & Modal Controls
+  setupChartInteractions();
 }
 
 /**
@@ -403,6 +423,9 @@ function updatePreviews() {
 
   // Validate subsystem alignment
   validateSubsystemMatch(a, b);
+  resetTradeoffAnalysis();
+  resetMaterialIntelligence();
+  if (resultsSection) resultsSection.style.display = "none";
 
   if (a) {
     const inrA = formatInrPrimary(Number(a.Total_Cost_USD), false);
@@ -660,6 +683,8 @@ async function runComparison() {
 
   if (!idA || !idB) {
     showAlert("Please select both Component A and Component B to benchmark.", true, "warning");
+    resetTradeoffAnalysis();
+    resetMaterialIntelligence();
     return;
   }
 
@@ -670,6 +695,8 @@ async function runComparison() {
   if (compA && compB && String(compA.Part_Name || "").trim() !== String(compB.Part_Name || "").trim()) {
     showAlert(`Please select two records with the same Part_Name. Currently selected: Component A is "${compA.Part_Name}" (${compA.Part_ID}) and Component B is "${compB.Part_Name}" (${compB.Part_ID}).`, true, "warning");
     validateSubsystemMatch(compA, compB);
+    resetTradeoffAnalysis();
+    resetMaterialIntelligence();
     return;
   }
 
@@ -703,9 +730,29 @@ async function runComparison() {
     renderBenchmarkResults(data);
     resultsSection.style.display = "block";
 
+    // Show comparison completion status indicator
+    const statusPill = document.getElementById("comparison-status-pill");
+    if (statusPill) {
+      statusPill.style.display = "inline-flex";
+      statusPill.classList.remove("pill-pulse");
+      void statusPill.offsetWidth;
+      statusPill.classList.add("pill-pulse");
+    }
+
+    // Automatically navigate to comparison results with smooth scrolling
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        const summaryBar = document.getElementById("comparison-summary-bar");
+        if (summaryBar) triggerCardPulse(summaryBar);
+      }, 70);
+    });
+
   } catch (error) {
     console.error("Comparison error:", error);
     showAlert(`Benchmark Error: ${error.message}`, true, "error");
+    resetTradeoffAnalysis();
+    resetMaterialIntelligence();
   } finally {
     setLoading(btnCompare, btnCompareText, false, "Run Benchmark Comparison");
   }
@@ -719,107 +766,125 @@ function renderBenchmarkResults(data) {
   const isLighter = analysis.lighter_design;
 
   const costDiff = analysis.cost_difference_usd;
-  const costChgPct = analysis.cost_change_percent; // Mathematically independent percentage
+  const costChgPct = analysis.cost_change_percent;
   const isCheaper = analysis.lower_cost_design;
 
-  // Format primary INR values (Requirement 2)
-  const costDiffInrPrimary = formatInrPrimary(costDiff, true);
-  const costDiffUsdText = `${costDiff >= 0 ? "+" : "-"}$${Math.abs(costDiff).toFixed(2)} USD`;
-
-  // 1. Weight Reduction KPI Card
-  const wtDiffElem = document.getElementById("kpi-weight-diff");
-  const wtBadgeElem = document.getElementById("kpi-weight-reduction-badge");
-  const wtCardElem = document.getElementById("kpi-weight-card");
-  const wtDescElem = document.getElementById("kpi-weight-desc");
-
-  wtDiffElem.textContent = `${wtDiff > 0 ? "-" : "+"}${Math.abs(wtDiff).toFixed(2)} kg`;
-  wtBadgeElem.textContent = `${wtRedPct.toFixed(2)}% ${isLighter ? "Reduction" : "Increase"}`;
-  wtCardElem.className = `kpi-card ${isLighter ? "green" : "amber"}`;
-  wtDescElem.textContent = isLighter
-    ? `Component B reduces mass by ${Math.abs(wtDiff).toFixed(2)} kg (${wtRedPct.toFixed(2)}% lighter), enhancing dynamic handling and EV range.`
-    : `Component B adds ${Math.abs(wtDiff).toFixed(2)} kg (+${Math.abs(wtRedPct).toFixed(2)}% heavier) relative to Component A.`;
-
-  // 2. Manufacturing Cost KPI Card (Primary INR with secondary USD - Requirement 2)
-  const costDiffElem = document.getElementById("kpi-cost-diff");
-  const costSecondaryElem = document.getElementById("kpi-cost-secondary");
-  const costBadgeElem = document.getElementById("kpi-cost-change-badge");
-  const costCardElem = document.getElementById("kpi-cost-card");
-  const costDescElem = document.getElementById("kpi-cost-desc");
-
-  costDiffElem.textContent = costDiffInrPrimary;
-  if (costSecondaryElem) {
-    costSecondaryElem.textContent = costDiffUsdText;
-  }
-  costBadgeElem.textContent = `${costChgPct >= 0 ? "+" : ""}${costChgPct.toFixed(2)}% Change`;
-  costCardElem.className = `kpi-card ${isCheaper ? "green" : "amber"}`;
-  costDescElem.textContent = costDiff >= 0
-    ? `Component B carries a unit cost premium of ${costDiffInrPrimary} / $${Math.abs(costDiff).toFixed(2)} USD (+${costChgPct.toFixed(2)}%) due to material and tooling differences.`
-    : `Component B yields a unit cost savings of ${costDiffInrPrimary} / $${Math.abs(costDiff).toFixed(2)} USD (${costChgPct.toFixed(2)}%) per manufactured unit.`;
-
-  // 3. Material & Process Transition KPI Cards
-  document.getElementById("kpi-mat-transition").textContent = `${a.material} → ${b.material}`;
-  document.getElementById("kpi-mat-badge").textContent = analysis.material_changed ? "Alloy/Polymer Altered" : "Identical Material";
-  document.getElementById("kpi-mat-desc").textContent = analysis.material_changed
-    ? `Transition from ${a.material} to ${b.material} alters structural stiffness, corrosion resistance, and scrap value.`
-    : `Both designs utilize ${a.material}; structural variances derive from geometry and manufacturing tooling.`;
-
-  document.getElementById("kpi-proc-transition").textContent = `${a.manufacturing_process} → ${b.manufacturing_process}`;
-  document.getElementById("kpi-proc-badge").textContent = analysis.process_changed ? "Tooling Process Shift" : "Identical Process";
-  document.getElementById("kpi-proc-desc").textContent = analysis.process_changed
-    ? `Shifted from ${a.manufacturing_process} to ${b.manufacturing_process}, affecting press line cycle times and capital tooling amortization.`
-    : `Both designs utilize ${a.manufacturing_process}; tooling and cycle times remain structurally consistent.`;
-
-  // 4. Comparison Summary Bar (Requirement 5)
-  const summaryPairElem = document.getElementById("summary-component-pair");
-  const summaryPartElem = document.getElementById("summary-part-name");
-  const summaryWeightVal = document.getElementById("summary-weight-val");
-  const summaryWeightPct = document.getElementById("summary-weight-pct");
-  const summaryCostInrVal = document.getElementById("summary-cost-inr-val");
-  const summaryCostPct = document.getElementById("summary-cost-pct");
-  const summaryCostUsdVal = document.getElementById("summary-cost-usd-val");
-
-  if (summaryPairElem) {
-    summaryPairElem.textContent = `[${a.id}] ${a.vehicle} (${a.material}) vs [${b.id}] ${b.vehicle} (${b.material})`;
-  }
-  if (summaryPartElem) summaryPartElem.textContent = component_name;
-  if (summaryWeightVal) summaryWeightVal.textContent = `${wtDiff > 0 ? "-" : "+"}${Math.abs(wtDiff).toFixed(2)} kg`;
-  if (summaryWeightPct) summaryWeightPct.textContent = `${wtRedPct.toFixed(2)}% ${isLighter ? "reduction" : "increase"}`;
-  if (summaryCostInrVal) summaryCostInrVal.textContent = costDiffInrPrimary;
-  if (summaryCostPct) summaryCostPct.textContent = `${costChgPct >= 0 ? "+" : ""}${costChgPct.toFixed(2)}% cost ${isCheaper ? "savings" : "increase"}`;
-  if (summaryCostUsdVal) summaryCostUsdVal.textContent = costDiffUsdText;
-
-  // 5. Detailed Technical Specifications Comparison Table
-  const tbody = document.getElementById("specs-table-body");
   const fullA = allComponents.find(c => c.Part_ID === a.id) || a;
   const fullB = allComponents.find(c => c.Part_ID === b.id) || b;
 
   const inrCostA = formatInrPrimary(Number(a.cost_usd), false);
   const inrCostB = formatInrPrimary(Number(b.cost_usd), false);
+  const costDiffInrPrimary = formatInrPrimary(costDiff, true);
+  const costDiffUsdText = `${costDiff >= 0 ? "+" : "-"}$${Math.abs(costDiff).toFixed(2)} USD`;
 
-  const rows = [
-    { label: "Part ID", a: a.id, b: b.id, delta: `${a.id} vs ${b.id}` },
-    { label: "Component Name", a: component_name, b: component_name, delta: "Equivalent Assembly" },
-    { label: "Vehicle Model", a: a.vehicle, b: b.vehicle, delta: a.vehicle !== b.vehicle ? "Model Variant" : "Identical Model" },
-    { label: "OEM Architecture", a: fullA.OEM || "OEM A", b: fullB.OEM || "OEM B", delta: fullA.OEM !== fullB.OEM ? "Cross-OEM" : "Same OEM" },
-    { label: "Subsystem Category", a: fullA.Subsystem || "Chassis", b: fullB.Subsystem || "Chassis", delta: "Same Subsystem" },
-    { label: "Material Composition", a: a.material, b: b.material, delta: analysis.material_changed ? "Material Shift" : "Identical" },
-    { label: "Manufacturing Process", a: a.manufacturing_process, b: b.manufacturing_process, delta: analysis.process_changed ? "Process Shift" : "Identical" },
-    { label: "Component Weight (kg)", a: `${Number(a.weight_kg).toFixed(2)} kg`, b: `${Number(b.weight_kg).toFixed(2)} kg`, delta: `${wtDiff > 0 ? "-" : "+"}${Math.abs(wtDiff).toFixed(2)} kg (${wtRedPct.toFixed(2)}% ${isLighter ? "lighter" : "heavier"})` },
-    { label: "Total Unit Cost (Est. INR & USD)", a: `<strong>${inrCostA}</strong><br><small style="color:var(--text-muted);">($${Number(a.cost_usd).toFixed(2)} USD)</small>`, b: `<strong>${inrCostB}</strong><br><small style="color:var(--text-muted);">($${Number(b.cost_usd).toFixed(2)} USD)</small>`, delta: `<strong>${costDiffInrPrimary}</strong><br><small style="color:var(--text-muted);">(${costDiffUsdText}, ${costChgPct >= 0 ? "+" : ""}${costChgPct.toFixed(2)}%)</small>` },
-    { label: "Design Complexity", a: fullA.Design_Complexity || "Medium", b: fullB.Design_Complexity || "Medium", delta: fullA.Design_Complexity !== fullB.Design_Complexity ? "Complexity Shift" : "Identical Complexity" }
-  ];
+  // ---------------------------------------------------------
+  // SECTION 1: Comparison Header
+  // ---------------------------------------------------------
+  const subTag = document.getElementById("results-subsystem-tag");
+  const titleA = document.getElementById("results-title-a");
+  const titleB = document.getElementById("results-title-b");
+  const subHeading = document.getElementById("results-comparison-subheading");
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td class="param-name">${r.label}</td>
-      <td class="col-a">${r.a}</td>
-      <td class="col-b">${r.b}</td>
-      <td><span style="font-size: 0.78rem; opacity: 0.9;">${r.delta}</span></td>
-    </tr>
-  `).join("");
+  if (subTag) subTag.textContent = `Subsystem: ${component_name}`;
+  if (titleA) titleA.textContent = `[${a.id}] ${a.vehicle} (${a.material})`;
+  if (titleB) titleB.textContent = `[${b.id}] ${b.vehicle} (${b.material})`;
+  if (subHeading) {
+    subHeading.textContent = `Direct mass benchmarking and technical parameter comparison between ${a.id} and ${b.id}.`;
+  }
 
-  // 6. Render Visual Comparison Charts (Standardized - Requirement 4)
+  // ---------------------------------------------------------
+  // SECTION 2: Technical Specification Cards (Side-by-Side)
+  // ---------------------------------------------------------
+  // Baseline Component A
+  const specAId = document.getElementById("spec-a-id");
+  const specAName = document.getElementById("spec-a-name");
+  const specAVehicle = document.getElementById("spec-a-vehicle");
+  const specAMat = document.getElementById("spec-a-material");
+  const specAProc = document.getElementById("spec-a-process");
+  const specAWt = document.getElementById("spec-a-weight");
+  const specACost = document.getElementById("spec-a-cost");
+  const specACostInr = document.getElementById("spec-a-cost-inr");
+  const specAComp = document.getElementById("spec-a-complexity");
+
+  if (specAId) specAId.textContent = a.id;
+  if (specAName) specAName.textContent = component_name;
+  if (specAVehicle) specAVehicle.textContent = `Model: ${a.vehicle} (${fullA.OEM || "OEM"})`;
+  if (specAMat) specAMat.textContent = a.material;
+  if (specAProc) specAProc.textContent = a.manufacturing_process;
+  if (specAWt) specAWt.textContent = `${Number(a.weight_kg).toFixed(2)} kg`;
+  if (specACost) specACost.textContent = `$${Number(a.cost_usd).toFixed(2)} USD`;
+  if (specACostInr) specACostInr.textContent = `est. ${inrCostA}`;
+  if (specAComp) specAComp.textContent = fullA.Design_Complexity || "Medium";
+
+  // Candidate Component B
+  const specBId = document.getElementById("spec-b-id");
+  const specBName = document.getElementById("spec-b-name");
+  const specBVehicle = document.getElementById("spec-b-vehicle");
+  const specBMat = document.getElementById("spec-b-material");
+  const specBProc = document.getElementById("spec-b-process");
+  const specBWt = document.getElementById("spec-b-weight");
+  const specBCost = document.getElementById("spec-b-cost");
+  const specBCostInr = document.getElementById("spec-b-cost-inr");
+  const specBComp = document.getElementById("spec-b-complexity");
+
+  if (specBId) specBId.textContent = b.id;
+  if (specBName) specBName.textContent = component_name;
+  if (specBVehicle) specBVehicle.textContent = `Model: ${b.vehicle} (${fullB.OEM || "OEM"})`;
+  if (specBMat) specBMat.textContent = b.material;
+  if (specBProc) specBProc.textContent = b.manufacturing_process;
+  if (specBWt) specBWt.textContent = `${Number(b.weight_kg).toFixed(2)} kg`;
+  if (specBCost) specBCost.textContent = `$${Number(b.cost_usd).toFixed(2)} USD`;
+  if (specBCostInr) specBCostInr.textContent = `est. ${inrCostB}`;
+  if (specBComp) specBComp.textContent = fullB.Design_Complexity || "Medium";
+
+  // ---------------------------------------------------------
+  // SECTION 3: Component Mass Benchmarking Graph
+  // ---------------------------------------------------------
+  const massLine = document.getElementById("mass-chart-summary-line");
+  if (massLine) {
+    if (wtDiff > 0.001) {
+      massLine.textContent = `Candidate [${b.id}] achieves a ${Math.abs(wtDiff).toFixed(2)} kg (${wtRedPct.toFixed(2)}%) mass reduction relative to Baseline [${a.id}].`;
+    } else if (wtDiff < -0.001) {
+      massLine.textContent = `Candidate [${b.id}] adds ${Math.abs(wtDiff).toFixed(2)} kg (+${Math.abs(wtRedPct).toFixed(2)}% heavier) relative to Baseline [${a.id}].`;
+    } else {
+      massLine.textContent = `Both components have identical mass (${Number(a.weight_kg).toFixed(2)} kg).`;
+    }
+  }
   renderComparisonCharts(a, b);
+
+  // ---------------------------------------------------------
+  // SECTION 4: Detailed Technical Specifications Comparison Table
+  // ---------------------------------------------------------
+  const tbody = document.getElementById("specs-table-body");
+  if (tbody) {
+    const rows = [
+      { label: "Part ID", a: a.id, b: b.id, delta: `${a.id} vs ${b.id}` },
+      { label: "Component Name", a: component_name, b: component_name, delta: "Equivalent Assembly" },
+      { label: "Vehicle Model", a: a.vehicle, b: b.vehicle, delta: a.vehicle !== b.vehicle ? "Model Variant" : "Identical Model" },
+      { label: "OEM Architecture", a: fullA.OEM || "OEM A", b: fullB.OEM || "OEM B", delta: fullA.OEM !== fullB.OEM ? "Cross-OEM" : "Same OEM" },
+      { label: "Subsystem Category", a: fullA.Subsystem || "Chassis", b: fullB.Subsystem || "Chassis", delta: "Same Subsystem" },
+      { label: "Material Composition", a: a.material, b: b.material, delta: analysis.material_changed ? "Material Shift" : "Identical" },
+      { label: "Manufacturing Process", a: a.manufacturing_process, b: b.manufacturing_process, delta: analysis.process_changed ? "Process Shift" : "Identical" },
+      { label: "Component Weight (kg)", a: `${Number(a.weight_kg).toFixed(2)} kg`, b: `${Number(b.weight_kg).toFixed(2)} kg`, delta: `${wtDiff > 0 ? "-" : "+"}${Math.abs(wtDiff).toFixed(2)} kg (${wtRedPct.toFixed(2)}% ${isLighter ? "lighter" : "heavier"})` },
+      { label: "Total Unit Cost (Est. INR & USD)", a: `<strong>${inrCostA}</strong><br><small style="color:var(--text-muted);">($${Number(a.cost_usd).toFixed(2)} USD)</small>`, b: `<strong>${inrCostB}</strong><br><small style="color:var(--text-muted);">($${Number(b.cost_usd).toFixed(2)} USD)</small>`, delta: `<strong>${costDiffInrPrimary}</strong><br><small style="color:var(--text-muted);">(${costDiffUsdText}, ${costChgPct >= 0 ? "+" : ""}${costChgPct.toFixed(2)}%)</small>` },
+      { label: "Design Complexity", a: fullA.Design_Complexity || "Medium", b: fullB.Design_Complexity || "Medium", delta: fullA.Design_Complexity !== fullB.Design_Complexity ? "Complexity Shift" : "Identical Complexity" }
+    ];
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="param-name">${r.label}</td>
+        <td class="col-a">${r.a}</td>
+        <td class="col-b">${r.b}</td>
+        <td><span style="font-size: 0.78rem; opacity: 0.9;">${r.delta}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  // ---------------------------------------------------------
+  // SECTION 5: One Concise Engineering Decision Summary
+  // ---------------------------------------------------------
+  const tradeoff = data.tradeoff_analysis || (data.analysis && data.analysis.tradeoff_analysis);
+  renderTradeoffAnalysis(tradeoff, a, b);
 }
 
 /* =========================================================
@@ -828,40 +893,113 @@ function renderBenchmarkResults(data) {
 
 function renderComparisonCharts(a, b) {
   const themeColors = getChartThemeColors();
+  const isNarrow = typeof window !== "undefined" && window.innerWidth < 480;
 
   // ---------------------------------------------------------
-  // Graph 1: Component Mass Benchmark (kg) - Horizontal Bar Chart
-  // Shows both component names and exact kg values
+  // Graph 1: Component Mass Benchmark (kg) - Line Chart
+  // Displays circular data-point markers, straight connecting line,
+  // exact weight values near markers, and clear axis labels
   // ---------------------------------------------------------
-  const ctxWeight = document.getElementById("weightChart").getContext("2d");
+  const weightCanvas = document.getElementById("weightChart");
+  if (!weightCanvas) return;
+  const ctxWeight = weightCanvas.getContext("2d");
   if (weightChartInstance) weightChartInstance.destroy();
 
   const isLighter = b.weight_kg < a.weight_kg;
   const colorBWeight = isLighter ? "#10b981" : "#f59e0b";
+  const lineColor = isLighter ? "#10b981" : "#3b82f6";
+
+  const weightLabelA = isNarrow ? `[${a.id}] ${a.vehicle}` : `[${a.id}] ${a.vehicle} (${a.material})`;
+  const weightLabelB = isNarrow ? `[${b.id}] ${b.vehicle}` : `[${b.id}] ${b.vehicle} (${b.material})`;
+
+  const maxWeightVal = Math.max(Number(a.weight_kg), Number(b.weight_kg));
+  const suggestedYMax = maxWeightVal > 0 ? maxWeightVal * 1.35 : 10;
+
+  // Custom inline Chart.js plugin to draw exact weight labels directly near circular markers
+  const massDataLabelsPlugin = {
+    id: "massDataLabels",
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta || !meta.data || !meta.data.length) return;
+
+      const isLight = document.documentElement.getAttribute("data-theme") === "light";
+      ctx.save();
+
+      meta.data.forEach((point, index) => {
+        const val = data.datasets[0].data[index];
+        if (val === undefined || val === null) return;
+        const formatted = `${Number(val).toFixed(2)} kg`;
+
+        ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const textMetrics = ctx.measureText(formatted);
+        const paddingX = 8;
+        const boxHeight = 20;
+        const boxWidth = textMetrics.width + paddingX * 2;
+        const boxX = point.x - boxWidth / 2;
+        const boxY = point.y - 30; // Positioned cleanly above circular point marker
+
+        // Pill background for high legibility in light & dark modes
+        ctx.fillStyle = isLight ? "#ffffff" : "#0f172a";
+        ctx.strokeStyle = index === 0 ? "#3b82f6" : colorBWeight;
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 4);
+        } else {
+          ctx.rect(boxX, boxY, boxWidth, boxHeight);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        // Exact weight text
+        ctx.fillStyle = isLight ? "#0f172a" : "#f8fafc";
+        ctx.fillText(formatted, point.x, boxY + boxHeight / 2);
+      });
+
+      ctx.restore();
+    }
+  };
 
   weightChartInstance = new Chart(ctxWeight, {
-    type: "bar",
+    type: "line",
     data: {
-      labels: [
-        `[${a.id}] ${a.vehicle} (${a.material})`,
-        `[${b.id}] ${b.vehicle} (${b.material})`
-      ],
+      labels: [weightLabelA, weightLabelB],
       datasets: [{
-        label: "Mass (kg)",
+        label: "Component Mass (kg)",
         data: [Number(a.weight_kg), Number(b.weight_kg)],
-        backgroundColor: ["#3b82f6", colorBWeight],
-        borderColor: ["#2563eb", isLighter ? "#059669" : "#d97706"],
-        borderWidth: 1.5,
-        borderRadius: 5,
-        barThickness: 28
+        borderColor: lineColor,
+        backgroundColor: "rgba(59, 130, 246, 0.08)",
+        borderWidth: 2.5,
+        tension: 0, // Straight connecting line (no curved or smoothed lines)
+        fill: false,
+        pointStyle: "circle",
+        pointRadius: isNarrow ? 6 : 8,
+        pointHoverRadius: isNarrow ? 8 : 10,
+        pointBackgroundColor: ["#3b82f6", colorBWeight],
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2
       }]
     },
+    plugins: [massDataLabelsPlugin],
     options: {
-      indexAxis: "y", // Horizontal comparison chart
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            color: themeColors.text,
+            font: { weight: "600", size: isNarrow ? 10 : 11 },
+            boxWidth: 16,
+            boxHeight: 3
+          }
+        },
         tooltip: {
           backgroundColor: themeColors.tooltipBg,
           titleColor: themeColors.tooltipText,
@@ -870,124 +1008,154 @@ function renderComparisonCharts(a, b) {
           borderWidth: 1,
           padding: 10,
           callbacks: {
-            label: (context) => ` Component Mass: ${context.parsed.x.toFixed(2)} kg`
+            label: (context) => ` Component Mass: ${Number(context.parsed.y).toFixed(2)} kg`
           }
         }
       },
       scales: {
         x: {
+          offset: true, // Prevents circular points from clipping on the canvas edges
           grid: { color: themeColors.grid },
           ticks: {
             color: themeColors.text,
+            font: { size: isNarrow ? 9.5 : 11, weight: "600" }
+          },
+          title: {
+            display: true,
+            text: "Benchmarked Components (Baseline vs Candidate)",
+            color: themeColors.text,
+            font: { size: isNarrow ? 9.5 : 11, weight: "600" }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          suggestedMax: suggestedYMax,
+          grid: { color: themeColors.grid },
+          ticks: {
+            color: themeColors.text,
+            font: { size: isNarrow ? 9.5 : 11 },
             callback: (val) => `${val} kg`
           },
           title: {
             display: true,
-            text: "Mass in Kilograms (kg)",
+            text: "Component Mass (kg)",
             color: themeColors.text,
-            font: { size: 11, weight: "600" }
-          },
-          beginAtZero: true
-        },
-        y: {
-          grid: { display: false },
-          ticks: { color: themeColors.text, font: { weight: "600", size: 11 } }
-        }
-      }
-    }
-  });
-
-  // ---------------------------------------------------------
-  // Graph 2: Total Unit Cost Benchmark - Bar Chart
-  // Primary displayed currency: Estimated INR, USD in tooltips/secondary
-  // ---------------------------------------------------------
-  const ctxCost = document.getElementById("costChart").getContext("2d");
-  if (costChartInstance) costChartInstance.destroy();
-
-  const isCheaper = b.cost_usd < a.cost_usd;
-  const colorBCost = isCheaper ? "#10b981" : "#f59e0b";
-
-  const inrCostAVal = a.cost_usd * USD_TO_INR_RATE;
-  const inrCostBVal = b.cost_usd * USD_TO_INR_RATE;
-
-  costChartInstance = new Chart(ctxCost, {
-    type: "bar",
-    data: {
-      labels: [
-        `[${a.id}] ${a.vehicle} (${a.material})`,
-        `[${b.id}] ${b.vehicle} (${b.material})`
-      ],
-      datasets: [{
-        label: `Unit Cost (₹ estimated @ ₹${USD_TO_INR_RATE}/$)`,
-        data: [inrCostAVal, inrCostBVal],
-        backgroundColor: ["#3b82f6", colorBCost],
-        borderColor: ["#2563eb", isCheaper ? "#059669" : "#d97706"],
-        borderWidth: 1.5,
-        borderRadius: 5,
-        barThickness: 34
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: themeColors.tooltipBg,
-          titleColor: themeColors.tooltipText,
-          bodyColor: themeColors.tooltipText,
-          borderColor: themeColors.tooltipBorder,
-          borderWidth: 1,
-          padding: 10,
-          callbacks: {
-            label: (context) => {
-              const inrVal = context.parsed.y;
-              const usdVal = inrVal / USD_TO_INR_RATE;
-              const formattedInr = inrVal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              return ` Unit Cost: ₹${formattedInr} (estimated) [$${usdVal.toFixed(2)} USD]`;
-            }
+            font: { size: isNarrow ? 9.5 : 11, weight: "600" }
           }
         }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: themeColors.text, font: { weight: "600", size: 11 } }
-        },
-        y: {
-          grid: { color: themeColors.grid },
-          ticks: {
-            color: themeColors.text,
-            callback: (val) => `₹${Number(val).toLocaleString("en-IN")}`
-          },
-          title: {
-            display: true,
-            text: `Unit Cost in INR (₹ estimated @ ₹${USD_TO_INR_RATE}/USD)`,
-            color: themeColors.text,
-            font: { size: 11, weight: "600" }
-          },
-          beginAtZero: true
-        }
       }
     }
   });
+
+  // ---------------------------------------------------------
+  // Graph 2: Total Unit Cost Benchmark - Horizontal Bar Chart
+  // Standardized horizontal style matching Graph 1
+  // Primary displayed currency: Estimated INR, USD in tooltips/secondary
+  // ---------------------------------------------------------
+  const costCanvas = document.getElementById("costChart");
+  if (costCanvas) {
+    const ctxCost = costCanvas.getContext("2d");
+    if (costChartInstance) costChartInstance.destroy();
+
+    const isCheaper = b.cost_usd < a.cost_usd;
+    const colorBCost = isCheaper ? "#10b981" : "#f59e0b";
+
+    const inrCostAVal = a.cost_usd * USD_TO_INR_RATE;
+    const inrCostBVal = b.cost_usd * USD_TO_INR_RATE;
+
+    const costLabelA = isNarrow ? `[${a.id}] ${a.vehicle}` : `[${a.id}] ${a.vehicle} (${a.material})`;
+    const costLabelB = isNarrow ? `[${b.id}] ${b.vehicle}` : `[${b.id}] ${b.vehicle} (${b.material})`;
+
+    costChartInstance = new Chart(ctxCost, {
+      type: "bar",
+      data: {
+        labels: [costLabelA, costLabelB],
+        datasets: [{
+          label: `Unit Cost (₹ estimated @ ₹${USD_TO_INR_RATE}/$)`,
+          data: [inrCostAVal, inrCostBVal],
+          backgroundColor: ["#3b82f6", colorBCost],
+          borderColor: ["#2563eb", isCheaper ? "#059669" : "#d97706"],
+          borderWidth: 1.5,
+          borderRadius: 5,
+          barThickness: isNarrow ? 22 : 28
+        }]
+      },
+      options: {
+        indexAxis: "y", // Standardized horizontal comparison chart
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: themeColors.tooltipBg,
+            titleColor: themeColors.tooltipText,
+            bodyColor: themeColors.tooltipText,
+            borderColor: themeColors.tooltipBorder,
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: (context) => {
+                const inrVal = context.parsed.x;
+                const usdVal = inrVal / USD_TO_INR_RATE;
+                const formattedInr = inrVal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return ` Unit Cost: ₹${formattedInr} (estimated) [$${usdVal.toFixed(2)} USD]`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: themeColors.grid },
+            ticks: {
+              color: themeColors.text,
+              font: { size: isNarrow ? 9.5 : 11 },
+              callback: (val) => `₹${Number(val).toLocaleString("en-IN")}`
+            },
+            title: {
+              display: true,
+              text: `Unit Cost in INR (₹ estimated @ ₹${USD_TO_INR_RATE}/USD)`,
+              color: themeColors.text,
+              font: { size: isNarrow ? 9.5 : 11, weight: "600" }
+            },
+            beginAtZero: true
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: themeColors.text, font: { weight: "600", size: isNarrow ? 9.5 : 11 } }
+          }
+        }
+      }
+    });
+  }
 }
 
 function renderFleetMaterialDistribution(components) {
-  const ctxMaterial = document.getElementById("materialChart").getContext("2d");
+  const matCanvas = document.getElementById("materialChart");
+  if (!matCanvas) return;
+  const ctxMaterial = matCanvas.getContext("2d");
   if (materialChartInstance) materialChartInstance.destroy();
 
   const themeColors = getChartThemeColors();
+  const isNarrow = typeof window !== "undefined" && window.innerWidth < 480;
 
-  // Aggregate material counts
+  // Standardized to horizontal bar style (formerly doughnut chart: "doughnut")
+  const MATERIAL_CHART_LEGACY_TYPE = "doughnut";
+
+  // Standardize 5 structural material categories
+  const categories = ["Steel", "Aluminum", "Plastic", "Magnesium", "Cast Iron"];
   const counts = {};
+  categories.forEach(cat => { counts[cat] = 0; });
   components.forEach(c => {
-    counts[c.Material] = (counts[c.Material] || 0) + 1;
+    if (counts[c.Material] !== undefined) {
+      counts[c.Material]++;
+    } else {
+      counts[c.Material] = (counts[c.Material] || 0) + 1;
+    }
   });
 
-  const labels = Object.keys(counts);
-  const dataValues = Object.values(counts);
-  const total = components.length;
+  const total = components.length || 50;
+  const pctData = categories.map(cat => Number((((counts[cat] || 0) / total) * 100).toFixed(1)));
+  const countData = categories.map(cat => counts[cat] || 0);
 
   const materialColorMap = {
     "Steel": "#64748b",
@@ -997,31 +1165,28 @@ function renderFleetMaterialDistribution(components) {
     "Cast Iron": "#f59e0b"
   };
 
-  const bgColors = labels.map(mat => materialColorMap[mat] || "#3b82f6");
+  const bgColors = categories.map(cat => materialColorMap[cat] || "#3b82f6");
 
   materialChartInstance = new Chart(ctxMaterial, {
-    type: "doughnut",
+    type: "bar",
     data: {
-      labels: labels,
+      labels: categories,
       datasets: [{
-        data: dataValues,
+        label: "Fleet Share (%)",
+        data: pctData,
         backgroundColor: bgColors,
-        borderWidth: 2,
-        borderColor: document.documentElement.getAttribute("data-theme") === "light" ? "#ffffff" : "#111a2e"
+        borderColor: bgColors,
+        borderWidth: 1.5,
+        borderRadius: 5,
+        barThickness: isNarrow ? 20 : 24
       }]
     },
     options: {
+      indexAxis: "y", // Standardized horizontal bar chart
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: "right",
-          labels: {
-            color: themeColors.text,
-            boxWidth: 12,
-            font: { size: 11 }
-          }
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: themeColors.tooltipBg,
           titleColor: themeColors.tooltipText,
@@ -1031,14 +1196,304 @@ function renderFleetMaterialDistribution(components) {
           padding: 10,
           callbacks: {
             label: (context) => {
-              const val = context.parsed;
-              const pct = ((val / total) * 100).toFixed(1);
-              return ` ${context.label}: ${val} parts (${pct}%)`;
+              const idx = context.dataIndex;
+              const cat = categories[idx];
+              const pct = pctData[idx];
+              const cnt = countData[idx];
+              return ` ${cat}: ${cnt} parts (${pct}% of fleet)`;
             }
           }
         }
       },
-      cutout: "62%"
+      scales: {
+        x: {
+          grid: { color: themeColors.grid },
+          ticks: {
+            color: themeColors.text,
+            font: { size: isNarrow ? 9.5 : 11 },
+            callback: (val) => `${val}%`
+          },
+          title: {
+            display: true,
+            text: "Fleet Share Percentage (%)",
+            color: themeColors.text,
+            font: { size: isNarrow ? 9.5 : 11, weight: "600" }
+          },
+          beginAtZero: true,
+          suggestedMax: 30
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: themeColors.text, font: { weight: "600", size: isNarrow ? 9.5 : 11 } }
+        }
+      }
+    }
+  });
+}
+
+/* =========================================================
+   5B. Interactive Chart Controls (Zoom, Reset, Modal, PNG)
+   ========================================================= */
+
+function getChartInstance(chartType) {
+  if (chartType === "weight") return weightChartInstance;
+  if (chartType === "cost") return costChartInstance;
+  if (chartType === "material") return materialChartInstance;
+  if (chartType === "expanded") return expandedChartInstance;
+  return null;
+}
+
+function handleChartAction(chartType, action) {
+  if (action === "zoom-in") {
+    zoomChart(chartType, 0.8);
+  } else if (action === "zoom-out") {
+    zoomOutChart(chartType, 1.25);
+  } else if (action === "reset") {
+    resetChartZoom(chartType);
+  } else if (action === "download") {
+    handleChartDownload(chartType);
+  } else if (action === "expand") {
+    openExpandedChartModal(chartType);
+  }
+}
+
+function zoomChart(chartType, factor = 0.8) {
+  const chart = getChartInstance(chartType);
+  if (!chart || !chart.scales) return;
+
+  const isLine = chart.config && chart.config.type === "line";
+  const scaleKey = isLine ? "y" : (chart.options.indexAxis === "y" ? "x" : "y");
+  const scale = chart.scales[scaleKey];
+  if (!scale) return;
+
+  const scaleOpts = chart.options.scales[scaleKey];
+  if (!scaleOpts) return;
+
+  if (chart._originalMax === undefined || chart._originalMax === null) {
+    chart._originalMax = scale.max !== undefined && scale.max !== null ? scale.max : scale.end;
+  }
+
+  const currentMax = scaleOpts.max !== undefined && scaleOpts.max !== null
+    ? scaleOpts.max
+    : scale.end;
+  const currentMin = scaleOpts.min !== undefined && scaleOpts.min !== null
+    ? scaleOpts.min
+    : (scale.min || 0);
+
+  const range = currentMax - currentMin;
+  const newMax = currentMin + range * factor;
+
+  if (newMax > currentMin + 0.05) {
+    scaleOpts.min = currentMin;
+    scaleOpts.max = newMax;
+    chart.update();
+  }
+}
+
+function zoomOutChart(chartType, factor = 1.25) {
+  const chart = getChartInstance(chartType);
+  if (!chart || !chart.scales) return;
+
+  const isLine = chart.config && chart.config.type === "line";
+  const scaleKey = isLine ? "y" : (chart.options.indexAxis === "y" ? "x" : "y");
+  const scale = chart.scales[scaleKey];
+  if (!scale) return;
+
+  const scaleOpts = chart.options.scales[scaleKey];
+  if (!scaleOpts) return;
+
+  if (chart._originalMax === undefined || chart._originalMax === null) {
+    chart._originalMax = scale.max !== undefined && scale.max !== null ? scale.max : scale.end;
+  }
+
+  const currentMax = scaleOpts.max !== undefined && scaleOpts.max !== null
+    ? scaleOpts.max
+    : scale.end;
+  const currentMin = scaleOpts.min !== undefined && scaleOpts.min !== null
+    ? scaleOpts.min
+    : (scale.min || 0);
+
+  const range = currentMax - currentMin;
+  const originalMax = chart._originalMax || currentMax;
+  const newMax = Math.min(currentMin + range * factor, originalMax * 2.5);
+
+  scaleOpts.min = currentMin;
+  scaleOpts.max = newMax;
+  chart.update();
+}
+
+function resetChartZoom(chartType) {
+  const chart = getChartInstance(chartType);
+  if (!chart || !chart.options || !chart.options.scales) return;
+
+  const isLine = chart.config && chart.config.type === "line";
+  const scaleKey = isLine ? "y" : (chart.options.indexAxis === "y" ? "x" : "y");
+  const scaleOpts = chart.options.scales[scaleKey];
+  if (!scaleOpts) return;
+
+  delete scaleOpts.min;
+  delete scaleOpts.max;
+  scaleOpts.beginAtZero = true;
+  chart.update();
+}
+
+function handleChartDownload(chartType) {
+  const chart = getChartInstance(chartType);
+  if (!chart || !chart.canvas) return;
+
+  let filename = "compbench-chart.png";
+  if (chartType === "weight") filename = "compbench-mass-benchmark.png";
+  else if (chartType === "cost") filename = "compbench-cost-benchmark.png";
+  else if (chartType === "material") filename = "compbench-material-distribution.png";
+  else if (chartType === "expanded") filename = "compbench-expanded-benchmark.png";
+
+  const canvas = chart.canvas;
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = canvas.width;
+  exportCanvas.height = canvas.height;
+  const ctx = exportCanvas.getContext("2d");
+
+  // Solid background matching active theme
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  ctx.fillStyle = isLight ? "#ffffff" : "#0d1527";
+  ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+  // Render chart
+  ctx.drawImage(canvas, 0, 0);
+
+  // Engineering watermark
+  ctx.fillStyle = isLight ? "#94a3b8" : "#64748b";
+  ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("CompBench AI • Automotive Engineering Intelligence", exportCanvas.width - 14, exportCanvas.height - 10);
+
+  const link = document.createElement("a");
+  link.href = exportCanvas.toDataURL("image/png", 1.0);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function openExpandedChartModal(chartType) {
+  const modal = document.getElementById("modal-chart-expanded");
+  const titleElem = document.getElementById("modal-chart-title");
+  const subElem = document.getElementById("modal-chart-subtitle");
+  const canvas = document.getElementById("expandedChartCanvas");
+
+  if (!modal || !canvas) return;
+
+  currentExpandedChartType = chartType;
+  const srcChart = getChartInstance(chartType);
+  if (!srcChart) return;
+
+  let title = "Expanded Benchmark Chart";
+  let subtitle = "High-resolution interactive engineering data view";
+
+  if (chartType === "weight") {
+    title = "Component Mass Benchmark (kg)";
+    subtitle = "Line mass comparison showing exact kg data points and trajectory.";
+  } else if (chartType === "cost") {
+    title = "Total Unit Cost Benchmark (INR & USD)";
+    subtitle = `Unit manufacturing cost in estimated INR (1 USD ≈ ₹${USD_TO_INR_RATE.toFixed(1)} est.) with secondary USD references.`;
+  } else if (chartType === "material") {
+    title = "Fleet Material Distribution (%)";
+    subtitle = "Horizontal distribution showing 50 total records across 5 material categories.";
+  }
+
+  if (titleElem) titleElem.textContent = title;
+  if (subElem) subElem.textContent = subtitle;
+
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+
+  if (expandedChartInstance) {
+    expandedChartInstance.destroy();
+    expandedChartInstance = null;
+  }
+
+  const themeColors = getChartThemeColors();
+  const clonedData = JSON.parse(JSON.stringify(srcChart.data));
+  const clonedOptions = JSON.parse(JSON.stringify(srcChart.options));
+
+  if (clonedData.datasets && clonedData.datasets[0]) {
+    if (srcChart.config.type === "line") {
+      clonedData.datasets[0].pointRadius = 10;
+      clonedData.datasets[0].pointHoverRadius = 12;
+      clonedData.datasets[0].borderWidth = 3.5;
+    } else {
+      clonedData.datasets[0].barThickness = 36;
+    }
+  }
+  if (clonedOptions.scales && clonedOptions.scales.x && clonedOptions.scales.x.ticks) {
+    clonedOptions.scales.x.ticks.font = { size: 12 };
+  }
+  if (clonedOptions.scales && clonedOptions.scales.y && clonedOptions.scales.y.ticks) {
+    clonedOptions.scales.y.ticks.font = { size: 12, weight: "600" };
+  }
+
+  // Restore callbacks stripped by JSON serialization
+  if (srcChart.options.plugins && srcChart.options.plugins.tooltip && srcChart.options.plugins.tooltip.callbacks) {
+    clonedOptions.plugins.tooltip.callbacks = srcChart.options.plugins.tooltip.callbacks;
+  }
+  if (srcChart.options.scales && srcChart.options.scales.x && srcChart.options.scales.x.ticks && srcChart.options.scales.x.ticks.callback) {
+    clonedOptions.scales.x.ticks.callback = srcChart.options.scales.x.ticks.callback;
+  }
+
+  const ctx = canvas.getContext("2d");
+  expandedChartInstance = new Chart(ctx, {
+    type: srcChart.config.type,
+    data: clonedData,
+    options: clonedOptions,
+    plugins: srcChart.config.plugins || []
+  });
+}
+
+function closeExpandedChartModal() {
+  const modal = document.getElementById("modal-chart-expanded");
+  if (!modal) return;
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
+  if (expandedChartInstance) {
+    expandedChartInstance.destroy();
+    expandedChartInstance = null;
+  }
+  currentExpandedChartType = null;
+}
+
+function setupChartInteractions() {
+  // Chart action buttons in card headers
+  document.querySelectorAll(".chart-tool-btn[data-action]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const chartType = btn.getAttribute("data-chart");
+      const action = btn.getAttribute("data-action");
+      handleChartAction(chartType, action);
+    });
+  });
+
+  // Modal Chart controls
+  const modalExpanded = document.getElementById("modal-chart-expanded");
+  const modalCloseBtn = document.getElementById("modal-chart-close");
+  const modalDownloadBtn = document.getElementById("modal-chart-download-btn");
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener("click", closeExpandedChartModal);
+  }
+  if (modalDownloadBtn) {
+    modalDownloadBtn.addEventListener("click", () => {
+      handleChartDownload("expanded");
+    });
+  }
+  if (modalExpanded) {
+    modalExpanded.addEventListener("click", (e) => {
+      if (e.target === modalExpanded) closeExpandedChartModal();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modalExpanded && modalExpanded.classList.contains("active")) {
+      closeExpandedChartModal();
     }
   });
 }
@@ -1330,5 +1785,449 @@ function setLoading(button, textSpan, isLoading, loadingText) {
   } else {
     button.disabled = false;
     textSpan.textContent = loadingText;
+  }
+}
+
+/* =========================================================
+   8. Engineering Trade-off Analysis & Decision Summary (Phase 2)
+   ========================================================= */
+
+function resetTradeoffAnalysis() {
+  const panel = document.getElementById("tradeoff-decision-panel");
+  if (panel) {
+    const verdictBadge = document.getElementById("decision-verdict-badge");
+    const summaryTextElem = document.getElementById("decision-summary-text");
+    const scenarioNameElem = document.getElementById("decision-scenario-name");
+    if (verdictBadge) {
+      verdictBadge.textContent = "Verdict Pending";
+      verdictBadge.className = "decision-verdict-badge";
+    }
+    if (scenarioNameElem) scenarioNameElem.textContent = "Multi-Criteria Engineering Decision Verdict";
+    if (summaryTextElem) summaryTextElem.textContent = "Run benchmark comparison to generate deterministic engineering decision summary.";
+    panel.className = "tradeoff-decision-panel";
+  }
+  const section = document.getElementById("tradeoff-analysis-section");
+  if (section) section.style.display = "none";
+}
+
+function renderTradeoffAnalysis(tradeoff, a, b) {
+  const decisionPanel = document.getElementById("tradeoff-decision-panel");
+  const section = document.getElementById("tradeoff-analysis-section");
+
+  if (!tradeoff) {
+    if (decisionPanel) decisionPanel.style.display = "none";
+    if (section) section.style.display = "none";
+    return;
+  }
+
+  if (decisionPanel) decisionPanel.style.display = "block";
+  if (section) section.style.display = "block";
+
+  // 1. Weight Savings Analysis
+  const wtDiffElem = document.getElementById("tradeoff-weight-diff");
+  const wtPctElem = document.getElementById("tradeoff-weight-pct");
+  const wtBadgeElem = document.getElementById("tradeoff-weight-badge");
+  const baseWtElem = document.getElementById("tradeoff-base-weight");
+  const candWtElem = document.getElementById("tradeoff-cand-weight");
+  const wtDescElem = document.getElementById("tradeoff-weight-desc");
+
+  const wtDiff = tradeoff.weight_difference_kg;
+  const wtPct = tradeoff.weight_change_pct;
+
+  if (baseWtElem) baseWtElem.textContent = `${Number(tradeoff.baseline_weight_kg).toFixed(2)} kg`;
+  if (candWtElem) candWtElem.textContent = `${Number(tradeoff.candidate_weight_kg).toFixed(2)} kg`;
+
+  if (tradeoff.weight_status === "lighter") {
+    if (wtDiffElem) wtDiffElem.textContent = `-${Math.abs(wtDiff).toFixed(2)} kg`;
+    if (wtPctElem) wtPctElem.textContent = `${Math.abs(wtPct).toFixed(2)}% Weight Reduction`;
+    if (wtBadgeElem) {
+      wtBadgeElem.className = "tradeoff-badge success";
+      wtBadgeElem.textContent = "Weight Saved (Lighter)";
+    }
+    if (wtDescElem) {
+      wtDescElem.textContent = `Candidate reduces component mass by ${Math.abs(wtDiff).toFixed(2)} kg (${Math.abs(wtPct).toFixed(2)}% lighter), supporting platform lightweighting and EV efficiency.`;
+    }
+  } else if (tradeoff.weight_status === "heavier") {
+    if (wtDiffElem) wtDiffElem.textContent = `+${Math.abs(wtDiff).toFixed(2)} kg`;
+    if (wtPctElem) wtPctElem.textContent = `+${Math.abs(wtPct).toFixed(2)}% Weight Increase`;
+    if (wtBadgeElem) {
+      wtBadgeElem.className = "tradeoff-badge warning";
+      wtBadgeElem.textContent = "Weight Gained (Heavier)";
+    }
+    if (wtDescElem) {
+      wtDescElem.textContent = `Candidate increases component mass by ${Math.abs(wtDiff).toFixed(2)} kg (+${Math.abs(wtPct).toFixed(2)}% heavier). Not classified as weight savings.`;
+    }
+  } else {
+    if (wtDiffElem) wtDiffElem.textContent = `0.00 kg`;
+    if (wtPctElem) wtPctElem.textContent = `0.00% (No Mass Variance)`;
+    if (wtBadgeElem) {
+      wtBadgeElem.className = "tradeoff-badge neutral";
+      wtBadgeElem.textContent = "Equal Mass";
+    }
+    if (wtDescElem) {
+      wtDescElem.textContent = "Both baseline and candidate components have identical mass values.";
+    }
+  }
+
+  // 2. Cost Trade-off Analysis
+  const costDiffElem = document.getElementById("tradeoff-cost-diff");
+  const costSecElem = document.getElementById("tradeoff-cost-secondary");
+  const costBadgeElem = document.getElementById("tradeoff-cost-badge");
+  const baseCostElem = document.getElementById("tradeoff-base-cost");
+  const candCostElem = document.getElementById("tradeoff-cand-cost");
+  const costDescElem = document.getElementById("tradeoff-cost-desc");
+
+  const costDiffUsd = tradeoff.additional_cost_usd;
+  const costDiffInr = tradeoff.additional_cost_inr;
+  const costPct = tradeoff.cost_change_pct != null ? tradeoff.cost_change_pct : 0.0;
+
+  const inrFormatted = Math.abs(costDiffInr).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const usdFormatted = Math.abs(costDiffUsd).toFixed(2);
+
+  if (baseCostElem) {
+    const baseInr = formatInrPrimary(Number(tradeoff.baseline_cost_usd), false);
+    baseCostElem.innerHTML = `${baseInr} <small style="color:var(--text-muted); font-size:0.75rem;">($${Number(tradeoff.baseline_cost_usd).toFixed(2)})</small>`;
+  }
+  if (candCostElem) {
+    const candInr = formatInrPrimary(Number(tradeoff.candidate_cost_usd), false);
+    candCostElem.innerHTML = `${candInr} <small style="color:var(--text-muted); font-size:0.75rem;">($${Number(tradeoff.candidate_cost_usd).toFixed(2)})</small>`;
+  }
+
+  if (tradeoff.cost_status === "cheaper") {
+    if (costDiffElem) costDiffElem.textContent = `-₹${inrFormatted} (est.)`;
+    if (costSecElem) costSecElem.textContent = `-$${usdFormatted} USD (-${Math.abs(costPct).toFixed(2)}% Cost Savings)`;
+    if (costBadgeElem) {
+      costBadgeElem.className = "tradeoff-badge success";
+      costBadgeElem.textContent = "Cost Savings";
+    }
+    if (costDescElem) {
+      costDescElem.textContent = `Candidate yields a manufacturing unit cost savings of $${usdFormatted} USD (est. ₹${inrFormatted} @ ₹85/$) per unit.`;
+    }
+  } else if (tradeoff.cost_status === "more_expensive") {
+    if (costDiffElem) costDiffElem.textContent = `+₹${inrFormatted} (est.)`;
+    if (costSecElem) costSecElem.textContent = `+$${usdFormatted} USD (+${Math.abs(costPct).toFixed(2)}% Additional Cost)`;
+    if (costBadgeElem) {
+      costBadgeElem.className = "tradeoff-badge warning";
+      costBadgeElem.textContent = "Additional Investment";
+    }
+    if (costDescElem) {
+      costDescElem.textContent = `Candidate carries an additional unit cost premium of $${usdFormatted} USD (est. ₹${inrFormatted} @ ₹85/$) due to material and tooling variance.`;
+    }
+  } else {
+    if (costDiffElem) costDiffElem.textContent = `₹0.00 (est.)`;
+    if (costSecElem) costSecElem.textContent = `$0.00 USD (0.00% Parity)`;
+    if (costBadgeElem) {
+      costBadgeElem.className = "tradeoff-badge neutral";
+      costBadgeElem.textContent = "Equal Cost";
+    }
+    if (costDescElem) {
+      costDescElem.textContent = "Both baseline and candidate components have identical unit manufacturing costs.";
+    }
+  }
+
+  // 3. Additional Cost per kg Saved
+  const costPerKgElem = document.getElementById("tradeoff-cost-per-kg");
+  const costPerKgInrElem = document.getElementById("tradeoff-cost-per-kg-inr");
+  const efficiencyBadge = document.getElementById("tradeoff-efficiency-badge");
+  const efficiencyDesc = document.getElementById("tradeoff-efficiency-desc");
+
+  if (tradeoff.cost_per_kg_saved_applicable) {
+    const usdVal = tradeoff.cost_per_kg_saved_usd;
+    const inrVal = tradeoff.cost_per_kg_saved_inr;
+    const inrKgFormatted = inrVal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    if (tradeoff.cost_per_kg_type === "savings") {
+      if (costPerKgElem) costPerKgElem.textContent = `-$${usdVal.toFixed(2)} / kg`;
+      if (costPerKgInrElem) costPerKgInrElem.textContent = `Cost saving of ₹${inrKgFormatted} / kg saved (est. @ ₹85/$)`;
+      if (efficiencyBadge) {
+        efficiencyBadge.className = "tradeoff-badge success";
+        efficiencyBadge.textContent = "Dual Benefit Efficiency";
+      }
+      if (efficiencyDesc) {
+        efficiencyDesc.textContent = "Candidate reduces both mass and direct unit cost. Displayed metric reflects direct manufacturing cost savings generated per kilogram of reduced weight.";
+      }
+    } else if (tradeoff.cost_per_kg_type === "investment") {
+      if (costPerKgElem) costPerKgElem.textContent = `$${usdVal.toFixed(2)} / kg`;
+      if (costPerKgInrElem) costPerKgInrElem.textContent = `₹${inrKgFormatted} / kg saved (est. @ ₹85/$)`;
+      if (efficiencyBadge) {
+        efficiencyBadge.className = "tradeoff-badge warning";
+        efficiencyBadge.textContent = "Lightweighting Metric";
+      }
+      if (efficiencyDesc) {
+        efficiencyDesc.textContent = "Automotive lightweighting metric ($/kg saved). Measures additional manufacturing expenditure required to eliminate each kilogram of vehicle mass.";
+      }
+    } else {
+      if (costPerKgElem) costPerKgElem.textContent = `$0.00 / kg`;
+      if (costPerKgInrElem) costPerKgInrElem.textContent = `₹0.00 / kg saved (est. @ ₹85/$)`;
+      if (efficiencyBadge) {
+        efficiencyBadge.className = "tradeoff-badge neutral";
+        efficiencyBadge.textContent = "Cost Parity";
+      }
+      if (efficiencyDesc) {
+        efficiencyDesc.textContent = "Candidate achieves mass reduction at identical cost parity (zero additional capital investment per kilogram).";
+      }
+    }
+  } else {
+    if (costPerKgElem) costPerKgElem.textContent = "N/A";
+    if (costPerKgInrElem) costPerKgInrElem.textContent = tradeoff.cost_per_kg_reason || "Not applicable";
+    if (efficiencyBadge) {
+      efficiencyBadge.className = "tradeoff-badge neutral";
+      efficiencyBadge.textContent = "Metric Inapplicable";
+    }
+    if (efficiencyDesc) {
+      efficiencyDesc.textContent = tradeoff.cost_per_kg_status === "not_applicable_heavier"
+        ? "Not applicable – candidate weight increased relative to baseline. The $/kg saved metric only applies to mass reduction."
+        : "Not applicable – no weight reduction detected between selected designs.";
+    }
+  }
+
+  // 4. Engineering Decision Summary Panel
+  const scenarioNameElem = document.getElementById("decision-scenario-name");
+  const verdictBadge = document.getElementById("decision-verdict-badge");
+  const summaryTextElem = document.getElementById("decision-summary-text");
+
+  const dec = tradeoff.decision || {};
+
+  if (scenarioNameElem) scenarioNameElem.textContent = dec.scenario_name || "Multi-Criteria Decision Analysis";
+  if (verdictBadge) {
+    verdictBadge.textContent = dec.verdict || "Decision Evaluated";
+    verdictBadge.className = `decision-verdict-badge ${dec.recommendation_type || "neutral"}`;
+  }
+  if (decisionPanel) {
+    decisionPanel.className = `tradeoff-decision-panel ${dec.recommendation_type || "neutral"}`;
+  }
+  if (summaryTextElem) {
+    summaryTextElem.textContent = dec.summary_text || "Decision summary generated from Python deterministic rules.";
+  }
+}
+
+/* =========================================================
+   9. Material Intelligence & Manufacturing Analysis (Phase 3)
+   ========================================================= */
+
+function resetMaterialIntelligence() {
+  const section = document.getElementById("material-intelligence-section");
+  if (section) section.style.display = "none";
+}
+
+function renderMaterialIntelligence(data, a, b) {
+  const section = document.getElementById("material-intelligence-section");
+  if (!section) return;
+
+  if (!data) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  const matA = data.material_a || {};
+  const matB = data.material_b || {};
+  const procA = data.process_a || {};
+  const procB = data.process_b || {};
+  const matComp = data.material_comparison || {};
+  const procComp = data.process_comparison || {};
+
+  // 1. Data Boundary Notice (Component measurement vs general property distinction)
+  const boundaryText = document.getElementById("material-boundary-text");
+  if (boundaryText) {
+    const idA = (a && a.id) || (data.component_measurements && data.component_measurements.baseline_component && data.component_measurements.baseline_component.id) || "Baseline A";
+    const idB = (b && b.id) || (data.component_measurements && data.component_measurements.candidate_component && data.component_measurements.candidate_component.id) || "Candidate B";
+    const wtA = a ? `${Number(a.weight_kg).toFixed(2)} kg` : "--";
+    const wtB = b ? `${Number(b.weight_kg).toFixed(2)} kg` : "--";
+    boundaryText.innerHTML = `<strong>Data Boundary:</strong> Component measurements (${escapeHtml(idA)}: ${wtA}, ${escapeHtml(idB)}: ${wtB}) reflect measured teardown ground truth; metallurgical density, modulus, and raw cost factors represent general material science standards from the engineering knowledge base.`;
+  }
+
+  // 2. Material Transition Verdict Banner
+  const transBadge = document.getElementById("mat-transition-badge");
+  const transText = document.getElementById("mat-transition-text");
+
+  if (transBadge) {
+    if (matComp.is_same_material) {
+      transBadge.textContent = "Identical Material Selection";
+      transBadge.className = "mat-transition-badge identical";
+    } else {
+      transBadge.textContent = "Material Transition";
+      transBadge.className = "mat-transition-badge";
+    }
+  }
+
+  if (transText) {
+    transText.textContent = matComp.transition_summary || "Analyzing metallurgical and material properties.";
+  }
+
+  // 3. Baseline Material Card (A)
+  populateMaterialCard("a", matA);
+
+  // 4. Candidate Material Card (B)
+  populateMaterialCard("b", matB);
+
+  // 5. Material Trade-off Matrix Table
+  const matrixBody = document.getElementById("material-matrix-body");
+  if (matrixBody) {
+    const rows = [
+      {
+        dim: "Density & Mass Impact",
+        valA: matA.density_g_cm3 ? `~${matA.density_g_cm3} g/cm³` : "N/A",
+        valB: matB.density_g_cm3 ? `~${matB.density_g_cm3} g/cm³` : "N/A",
+        delta: matComp.density_comparison || "--"
+      },
+      {
+        dim: "Elastic Modulus (Rigidity)",
+        valA: matA.youngs_modulus_gpa ? `~${matA.youngs_modulus_gpa} GPa` : "N/A",
+        valB: matB.youngs_modulus_gpa ? `~${matB.youngs_modulus_gpa} GPa` : "N/A",
+        delta: matComp.stiffness_comparison || "--"
+      },
+      {
+        dim: "Raw Material Economics",
+        valA: matA.relative_cost_factor ? `~${matA.relative_cost_factor}x baseline` : "N/A",
+        valB: matB.relative_cost_factor ? `~${matB.relative_cost_factor}x baseline` : "N/A",
+        delta: matComp.cost_comparison || "--"
+      },
+      {
+        dim: "Joinability & Assembly",
+        valA: (matA.joining_methods || []).slice(0, 2).join(", ") || "Standard Fastening",
+        valB: (matB.joining_methods || []).slice(0, 2).join(", ") || "Standard Fastening",
+        delta: matComp.joining_comparison || "--"
+      },
+      {
+        dim: "Corrosion & Environmental",
+        valA: matA.category === "Ferrous Alloy" ? "Atmospheric Oxidation (Red Rust) / e-coat required" : "Self-passivating oxide layer",
+        valB: matB.category === "Ferrous Alloy" ? "Atmospheric Oxidation (Red Rust) / e-coat required" : "Self-passivating oxide (dielectric isolation if paired with steel)",
+        delta: matComp.corrosion_comparison || "--"
+      }
+    ];
+
+    matrixBody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="matrix-dim-col">${escapeHtml(r.dim)}</td>
+        <td><strong>${escapeHtml(r.valA)}</strong></td>
+        <td><strong>${escapeHtml(r.valB)}</strong></td>
+        <td><span style="font-size: 0.8rem; line-height: 1.4; display: block;">${escapeHtml(r.delta)}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  // 6. Manufacturing Process Shift Banner & Cards
+  const procTransText = document.getElementById("proc-transition-text");
+  if (procTransText) {
+    procTransText.textContent = procComp.transition_summary || "Tooling type and press setup evaluation.";
+  }
+
+  populateProcessCard("a", procA);
+  populateProcessCard("b", procB);
+
+  // 7. Knowledge Base Source Citations
+  const citationsContainer = document.getElementById("material-citations-list");
+  if (citationsContainer) {
+    const citations = data.source_citations || [];
+    if (citations.length > 0) {
+      citationsContainer.innerHTML = citations.map(c => `
+        <span class="attr-pill" title="${escapeHtml(c.source_title)} - ${escapeHtml(c.section)}">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          ${escapeHtml(c.source_file)} &bull; ${escapeHtml(c.section)}
+        </span>
+      `).join("");
+    } else {
+      citationsContainer.innerHTML = `
+        <span class="attr-pill">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          steel_vs_aluminum.md &bull; Physical and Mechanical Comparisons
+        </span>
+        <span class="attr-pill">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          manufacturing_processes.md &bull; Tooling and Cycle Times
+        </span>
+      `;
+    }
+  }
+}
+
+function populateMaterialCard(prefix, mat) {
+  const nameElem = document.getElementById(`mat-${prefix}-name`);
+  const catElem = document.getElementById(`mat-${prefix}-category`);
+  const densElem = document.getElementById(`mat-${prefix}-density`);
+  const modElem = document.getElementById(`mat-${prefix}-modulus`);
+  const costElem = document.getElementById(`mat-${prefix}-cost-factor`);
+  const lightElem = document.getElementById(`mat-${prefix}-lightweight-cost`);
+  const fatigueElem = document.getElementById(`mat-${prefix}-fatigue`);
+  const corrElem = document.getElementById(`mat-${prefix}-corrosion`);
+  const formElem = document.getElementById(`mat-${prefix}-forming`);
+  const joinElem = document.getElementById(`mat-${prefix}-joining`);
+  const advElem = document.getElementById(`mat-${prefix}-advantages`);
+  const limElem = document.getElementById(`mat-${prefix}-limitations`);
+  const appElem = document.getElementById(`mat-${prefix}-applications`);
+
+  if (nameElem) nameElem.textContent = mat.material_name || "Unspecified Alloy";
+  if (catElem) catElem.textContent = mat.category || "Engineering Material";
+  if (densElem) densElem.textContent = mat.density_g_cm3 != null ? `${mat.density_g_cm3} g/cm³` : "N/A";
+  if (modElem) modElem.textContent = mat.youngs_modulus_gpa != null ? `${mat.youngs_modulus_gpa} GPa` : "N/A";
+  if (costElem) costElem.textContent = mat.relative_cost_factor != null ? `${mat.relative_cost_factor}x baseline` : "N/A";
+  if (lightElem) lightElem.textContent = mat.typical_lightweighting_cost || "--";
+  if (fatigueElem) fatigueElem.textContent = mat.fatigue_profile || "--";
+  if (corrElem) corrElem.textContent = mat.corrosion_profile || "--";
+  if (formElem) formElem.textContent = mat.forming_and_tooling || "--";
+
+  if (joinElem) {
+    const methods = mat.joining_methods || [];
+    joinElem.innerHTML = methods.map(m => `<span class="mat-tag-pill">${escapeHtml(m)}</span>`).join("");
+  }
+
+  if (advElem) {
+    const advs = mat.advantages || [];
+    advElem.innerHTML = advs.map(a => `<li>${escapeHtml(a)}</li>`).join("");
+  }
+
+  if (limElem) {
+    const lims = mat.limitations || [];
+    limElem.innerHTML = lims.map(l => `<li>${escapeHtml(l)}</li>`).join("");
+  }
+
+  if (appElem) {
+    const apps = mat.documented_applications || [];
+    appElem.innerHTML = apps.map(app => `<span class="mat-tag-pill">${escapeHtml(app)}</span>`).join("");
+  }
+}
+
+function populateProcessCard(prefix, proc) {
+  const nameElem = document.getElementById(`proc-${prefix}-name`);
+  const typeElem = document.getElementById(`proc-${prefix}-type`);
+  const cycleElem = document.getElementById(`proc-${prefix}-cycle`);
+  const scrapElem = document.getElementById(`proc-${prefix}-scrap`);
+  const toolElem = document.getElementById(`proc-${prefix}-tooling`);
+  const compatElem = document.getElementById(`proc-${prefix}-compat`);
+  const advElem = document.getElementById(`proc-${prefix}-advantages`);
+  const limElem = document.getElementById(`proc-${prefix}-limitations`);
+  const compElem = document.getElementById(`proc-${prefix}-components`);
+
+  if (nameElem) nameElem.textContent = proc.process_name || "Manufacturing Process";
+  if (typeElem) typeElem.textContent = proc.type || "Industrial";
+  if (cycleElem) cycleElem.textContent = proc.cycle_time || "--";
+  if (scrapElem) scrapElem.textContent = proc.scrap_rate || "--";
+  if (toolElem) toolElem.textContent = proc.tooling_economics || "--";
+  if (compatElem) compatElem.textContent = proc.material_compatibility || "--";
+
+  if (advElem) {
+    const advs = proc.advantages || [];
+    advElem.innerHTML = advs.map(a => `<li>${escapeHtml(a)}</li>`).join("");
+  }
+
+  if (limElem) {
+    const lims = proc.limitations || [];
+    limElem.innerHTML = lims.map(l => `<li>${escapeHtml(l)}</li>`).join("");
+  }
+
+  if (compElem) {
+    const comps = proc.typical_components || [];
+    compElem.innerHTML = comps.map(c => `<span class="mat-tag-pill">${escapeHtml(c)}</span>`).join("");
   }
 }

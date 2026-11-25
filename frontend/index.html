@@ -19,7 +19,7 @@
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <div>
+        <div class="brand-text">
           <h1 class="brand-title">
             COMPBENCH AI
             <span class="badge-ai">ENGINEERING SUITE</span>
@@ -271,114 +271,148 @@
     </section>
 
     <!-- Benchmark Analytics Section -->
-    <section id="results-section" class="results-section">
-      <!-- High-level KPI Cards with Plain-English Explanations -->
-      <div class="kpi-summary-grid">
-        <div class="kpi-card green" id="kpi-weight-card">
-          <div class="kpi-label">Weight Difference</div>
-          <div class="kpi-val" id="kpi-weight-diff">-- kg</div>
-          <span class="kpi-badge" id="kpi-weight-reduction-badge">--% Reduction</span>
-          <div class="kpi-explanation" id="kpi-weight-desc">Component mass delta calculated by Python engine.</div>
-        </div>
+    <section id="results-section" class="results-section" style="display: none;">
 
-        <div class="kpi-card amber" id="kpi-cost-card">
-          <div class="kpi-label">Cost Difference</div>
-          <div class="kpi-val" id="kpi-cost-diff">--</div>
-          <div class="kpi-secondary-info" id="kpi-cost-secondary">$-- USD</div>
-          <span class="kpi-badge" id="kpi-cost-change-badge">--% Change</span>
-          <div class="kpi-explanation" id="kpi-cost-desc">Manufacturing cost variance between selected designs.</div>
+      <!-- SECTION 1: Comparison Header -->
+      <div class="comparison-results-header">
+        <div class="comparison-title-wrap">
+          <div class="comparison-kicker-row">
+            <span class="comparison-badge">Benchmark Comparison</span>
+            <span class="comparison-subsystem-tag" id="results-subsystem-tag">Subsystem: --</span>
+          </div>
+          <h3 class="comparison-heading" id="results-comparison-heading">
+            <span class="comp-heading-name" id="results-title-a">Component A</span>
+            <span class="comp-vs-badge">VS</span>
+            <span class="comp-heading-name" id="results-title-b">Component B</span>
+          </h3>
+          <p class="comparison-subheading" id="results-comparison-subheading">
+            Direct mass benchmarking and technical parameter comparison.
+          </p>
         </div>
-
-        <div class="kpi-card neutral">
-          <div class="kpi-label">Material Transition</div>
-          <div class="kpi-val" style="font-size: 1.25rem;" id="kpi-mat-transition">-- &rarr; --</div>
-          <span class="kpi-badge" id="kpi-mat-badge">Material Shift</span>
-          <div class="kpi-explanation" id="kpi-mat-desc">Structural alloy or engineering polymer shift.</div>
-        </div>
-
-        <div class="kpi-card neutral">
-          <div class="kpi-label">Process Transition</div>
-          <div class="kpi-val" style="font-size: 1.25rem;" id="kpi-proc-transition">-- &rarr; --</div>
-          <span class="kpi-badge" id="kpi-proc-badge">Process Shift</span>
-          <div class="kpi-explanation" id="kpi-proc-desc">Tooling, stamping, casting or molding method.</div>
-        </div>
-      </div>
-
-      <!-- Compact Engineering Comparison Summary Bar (Requirement 5) -->
-      <div id="comparison-summary-bar" class="comparison-summary-bar">
-        <div class="summary-top-row">
-          <div class="summary-title-wrap">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="summary-icon">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
+        <div id="comparison-status-pill" class="comparison-status-pill" style="display: none;">
+          <span class="status-pill-icon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span class="summary-title">Comparison Summary:</span>
-            <span id="summary-component-pair" class="summary-components">-- vs --</span>
-          </div>
-          <span class="summary-badge" id="summary-engine-badge">Engine Ground Truth</span>
+          </span>
+          <span id="comparison-status-text">Comparison Complete</span>
         </div>
-        <div class="summary-metrics-grid">
-          <div class="summary-metric-card">
-            <span class="summary-metric-label">Subsystem</span>
-            <span class="summary-metric-val" id="summary-part-name">--</span>
+      </div>
+
+      <!-- SECTION 2: Component Technical Specifications (Side-by-Side Cards) -->
+      <div class="tech-specs-section">
+        <div class="tech-specs-cards-grid">
+          <!-- Component A (Baseline) Card -->
+          <div class="tech-spec-card baseline-card" id="spec-card-comp-a">
+            <div class="spec-card-top">
+              <span class="spec-role-pill tag-a">Baseline: Component A</span>
+              <span class="spec-part-id" id="spec-a-id">--</span>
+            </div>
+            <h4 class="spec-component-name" id="spec-a-name">--</h4>
+            <div class="spec-vehicle-line" id="spec-a-vehicle">Model: --</div>
+
+            <div class="spec-attributes-grid">
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Material</span>
+                <span class="spec-attr-val" id="spec-a-material">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Manufacturing Process</span>
+                <span class="spec-attr-val" id="spec-a-process">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Component Weight</span>
+                <span class="spec-attr-val highlight-weight" id="spec-a-weight">-- kg</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Unit Manufacturing Cost</span>
+                <span class="spec-attr-val highlight-cost" id="spec-a-cost">$-- USD</span>
+                <span class="spec-attr-sub" id="spec-a-cost-inr">est. ₹--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Design Complexity</span>
+                <span class="spec-attr-val" id="spec-a-complexity">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Data Fidelity</span>
+                <span class="spec-attr-val" id="spec-a-datatype">Synthetic Demo</span>
+              </div>
+            </div>
           </div>
-          <div class="summary-metric-card">
-            <span class="summary-metric-label">Weight Difference</span>
-            <span class="summary-metric-val" id="summary-weight-val">-- kg</span>
-            <span class="summary-metric-sub" id="summary-weight-pct">--%</span>
-          </div>
-          <div class="summary-metric-card">
-            <span class="summary-metric-label">Cost Difference (Est. INR)</span>
-            <span class="summary-metric-val inr-accent" id="summary-cost-inr-val">--</span>
-            <span class="summary-metric-sub" id="summary-cost-pct">--%</span>
-          </div>
-          <div class="summary-metric-card">
-            <span class="summary-metric-label">Secondary USD Cost</span>
-            <span class="summary-metric-val" id="summary-cost-usd-val">--</span>
+
+          <!-- Component B (Candidate) Card -->
+          <div class="tech-spec-card candidate-card" id="spec-card-comp-b">
+            <div class="spec-card-top">
+              <span class="spec-role-pill tag-b">Candidate: Component B</span>
+              <span class="spec-part-id" id="spec-b-id">--</span>
+            </div>
+            <h4 class="spec-component-name" id="spec-b-name">--</h4>
+            <div class="spec-vehicle-line" id="spec-b-vehicle">Model: --</div>
+
+            <div class="spec-attributes-grid">
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Material</span>
+                <span class="spec-attr-val" id="spec-b-material">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Manufacturing Process</span>
+                <span class="spec-attr-val" id="spec-b-process">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Component Weight</span>
+                <span class="spec-attr-val highlight-weight" id="spec-b-weight">-- kg</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Unit Manufacturing Cost</span>
+                <span class="spec-attr-val highlight-cost" id="spec-b-cost">$-- USD</span>
+                <span class="spec-attr-sub" id="spec-b-cost-inr">est. ₹--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Design Complexity</span>
+                <span class="spec-attr-val" id="spec-b-complexity">--</span>
+              </div>
+              <div class="spec-attr-item">
+                <span class="spec-attr-label">Data Fidelity</span>
+                <span class="spec-attr-val" id="spec-b-datatype">Synthetic Demo</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Improved Charts Grid (3 Charts) -->
-      <div class="charts-grid">
-        <!-- Chart 1: Weight Comparison (Horizontal Bar Chart) -->
-        <div class="chart-card">
-          <div class="chart-card-header">
+      <!-- SECTION 3: Component Mass Benchmarking Graph -->
+      <div class="chart-card mass-benchmarking-card">
+        <div class="chart-card-header">
+          <div class="chart-title-wrap">
             <h4>Component Mass Benchmark (kg)</h4>
-            <p class="chart-card-desc">Horizontal mass comparison showing exact kg values for both components.</p>
+            <p class="chart-card-desc" id="mass-chart-summary-line">
+              Line mass benchmark: Baseline Component A to Candidate Component B.
+            </p>
           </div>
-          <div class="chart-container">
-            <canvas id="weightChart"></canvas>
+          <div class="chart-toolbar" role="toolbar" aria-label="Mass chart controls">
+            <button type="button" class="chart-tool-btn" data-chart="weight" data-action="zoom-in" title="Zoom in mass scale" aria-label="Zoom in mass chart">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button type="button" class="chart-tool-btn" data-chart="weight" data-action="zoom-out" title="Zoom out mass scale" aria-label="Zoom out mass chart">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button type="button" class="chart-tool-btn" data-chart="weight" data-action="reset" title="Reset zoom" aria-label="Reset zoom for mass chart">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </button>
+            <button type="button" class="chart-tool-btn" data-chart="weight" data-action="download" title="Download chart PNG" aria-label="Download mass chart PNG">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button type="button" class="chart-tool-btn" data-chart="weight" data-action="expand" title="Expand to modal" aria-label="Expand mass chart to modal">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
           </div>
         </div>
-
-        <!-- Chart 2: Cost Comparison (Side-by-Side Column with primary INR) -->
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h4>Total Unit Cost Benchmark (INR &amp; USD)</h4>
-            <p class="chart-card-desc" id="cost-chart-desc">Unit manufacturing cost in estimated INR (<span id="rate-display">1 USD &asymp; &#8377;85.0 est.</span>) with secondary USD references.</p>
-          </div>
-          <div class="chart-container">
-            <canvas id="costChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Chart 3: Fleet Material Distribution (Doughnut Chart) -->
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h4>Fleet Material Distribution (%)</h4>
-            <p class="chart-card-desc">Doughnut breakdown showing 50 total records across 5 material categories.</p>
-          </div>
-          <div class="chart-container">
-            <canvas id="materialChart"></canvas>
-          </div>
+        <div class="chart-container" style="height: 260px;">
+          <canvas id="weightChart"></canvas>
         </div>
       </div>
 
-      <!-- Full Engineering Specifications Table -->
+      <!-- SECTION 4: Detailed Specification Comparison Table -->
       <div class="specs-card">
         <div class="section-header" style="border-bottom: none; margin-bottom: 0.5rem; padding-bottom: 0;">
           <div>
@@ -386,102 +420,57 @@
             <p class="section-subtitle">Side-by-side engineering parameters and detected variances.</p>
           </div>
         </div>
-        <table class="specs-table">
-          <thead>
-            <tr>
-              <th>Engineering Parameter</th>
-              <th>Component A (Baseline)</th>
-              <th>Component B (Candidate)</th>
-              <th>Variance / Shift</th>
-            </tr>
-          </thead>
-          <tbody id="specs-table-body">
-            <!-- Populated via app.js -->
-          </tbody>
-        </table>
+        <div class="specs-table-wrapper">
+          <table class="specs-table">
+            <thead>
+              <tr>
+                <th>Engineering Parameter</th>
+                <th>Component A (Baseline)</th>
+                <th>Component B (Candidate)</th>
+                <th>Variance / Shift</th>
+              </tr>
+            </thead>
+            <tbody id="specs-table-body">
+              <!-- Populated via app.js -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- AI Engineering Intelligence Section -->
-      <div id="ai-insights-container" class="ai-insights-section" style="display: none;">
-        <div class="ai-header-bar">
-          <div class="ai-title-wrap">
-            <h3 style="color: var(--text-main); font-size: 1.15rem; font-weight: 700;">AI Engineering Intelligence Report</h3>
-            <span id="ai-model-badge" class="ai-badge fallback">Deterministic Engineering Report</span>
-            <span class="ground-truth-pill">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              Python-Calculated Ground Truth Preserved
-            </span>
+      <!-- SECTION 5: One Concise Engineering Decision Summary -->
+      <div class="tradeoff-decision-panel" id="tradeoff-decision-panel">
+        <div class="decision-panel-header">
+          <div class="decision-title-group">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="decision-icon">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <div>
+              <h4 class="decision-panel-title">Engineering Decision Summary</h4>
+              <p class="decision-panel-subtitle" id="decision-scenario-name">Multi-Criteria Engineering Decision Verdict</p>
+            </div>
           </div>
-
-          <div id="ai-status-message" style="font-size: 0.78rem; color: var(--text-muted);">
-            <!-- Populated dynamically -->
-          </div>
+          <span class="decision-verdict-badge" id="decision-verdict-badge">Verdict Pending</span>
         </div>
 
-        <!-- Warning Alert if using fallback -->
-        <div id="ai-fallback-warning" class="notification-banner warning" style="display: none;">
-          <div class="banner-icon">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <div class="decision-panel-body">
+          <p id="decision-summary-text" class="decision-text">
+            Run benchmark comparison to generate deterministic engineering decision summary.
+          </p>
+        </div>
+
+        <div class="decision-panel-footer">
+          <div class="decision-disclaimer">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-          </div>
-          <div>
-            <strong>Notice on AI Provider:</strong> <span id="ai-warning-text">Deterministic engineering report generated from exact Python calculations and retrieved automotive knowledge.</span>
-          </div>
-        </div>
-
-        <!-- 5 Concise AI Engineering Report Section Cards -->
-        <div class="report-cards-grid">
-          <div class="report-card">
-            <div class="report-card-title">1. Comparison Summary</div>
-            <div class="report-card-body" id="rep-summary">--</div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-card-title">2. Weight Analysis</div>
-            <div class="report-card-body" id="rep-weight">--</div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-card-title">3. Cost Analysis</div>
-            <div class="report-card-body" id="rep-cost">--</div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-card-title">4. Material &amp; Manufacturing</div>
-            <div class="report-card-body" id="rep-material">--</div>
-          </div>
-
-          <div class="report-card full-width">
-            <div class="report-card-title">5. Engineering Conclusion</div>
-            <div class="report-card-body" id="rep-considerations-conclusion">--</div>
-          </div>
-        </div>
-
-        <!-- RAG Context Sources Card (Compact References with Expandable Passages) -->
-        <div class="rag-sources-card">
-          <div class="rag-card-header">
-            <div class="rag-title-row">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-              </svg>
-              <h4>Automotive Knowledge Base References (RAG Context)</h4>
-            </div>
-            <p class="rag-card-desc">
-              Passages retrieved via Scikit-learn TF-IDF &amp; Cosine Similarity to ground the engineering assessment in verified materials science and manufacturing principles. Passages are compact by default; expand to read complete citations.
-            </p>
-          </div>
-          <div class="rag-sources-list" id="rag-sources-list">
-            <!-- Populated via app.js -->
+            <span>Neutral engineering verdict based strictly on Python calculations. Structural and manufacturing validation required.</span>
           </div>
         </div>
       </div>
+
     </section>
 
   </main>
@@ -616,6 +605,43 @@
           <p>
             This dataset is synthetic and configured specifically for benchmarking algorithms, RAG document retrieval demonstrations, and LLM prompt grounding. It does not represent proprietary teardown engineering, confidential OEM CAD models, or certified production tolerances.
           </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Expanded High-Resolution Chart View -->
+  <div id="modal-chart-expanded" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-container chart-expanded-container">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color: var(--primary-blue);">
+            <polyline points="15 3 21 3 21 9"/>
+            <polyline points="9 21 3 21 3 15"/>
+            <line x1="21" y1="3" x2="14" y2="10"/>
+            <line x1="3" y1="21" x2="10" y2="14"/>
+          </svg>
+          <div>
+            <h3 id="modal-chart-title" class="modal-title">Expanded Benchmark Chart</h3>
+            <p id="modal-chart-subtitle" style="font-size: 0.76rem; color: var(--text-muted);">High-resolution interactive engineering data view</p>
+          </div>
+        </div>
+        <div class="modal-header-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+          <button type="button" id="modal-chart-download-btn" class="chart-tool-btn" style="padding: 0.4rem 0.75rem; width: auto; height: 32px; gap: 0.4rem; display: inline-flex;" title="Download PNG" aria-label="Download PNG">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span style="font-size: 0.75rem; font-weight: 600;">Download PNG</span>
+          </button>
+          <button type="button" id="modal-chart-close" class="modal-close-btn" aria-label="Close expanded chart" title="Close">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body chart-modal-body">
+        <div class="expanded-chart-canvas-wrap">
+          <canvas id="expandedChartCanvas"></canvas>
         </div>
       </div>
     </div>
