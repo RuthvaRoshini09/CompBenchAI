@@ -48,7 +48,7 @@ def compare_components(component_a_id, component_b_id):
     a = component_a.iloc[0]
     b = component_b.iloc[0]
 
-    if a["Part_Name"] != b["Part_Name"]:
+    if str(a["Part_Name"]).strip() != str(b["Part_Name"]).strip():
         raise ValueError(
             "Please select two records with the same Part_Name."
         )

@@ -1,4 +1,11 @@
 import json
+import sys
+from pathlib import Path
+
+# Ensure UTF-8 output on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from main import (
     app,
     components,
@@ -47,49 +54,90 @@ def run_tests():
     print("-> POST /knowledge/retrieve PASSED\n")
 
     print("=" * 60)
-    print("TEST 4: Verify new POST /analyze endpoint (Valid IDs: CB001 vs CB002)")
+    print("TEST 4: Verify POST /analyze endpoint for 3 key benchmarks")
     print("=" * 60)
-    req = AnalyzeRequest(component_a_id="CB001", component_b_id="CB002")
-    analyze_res = analyze(req)
 
-    # Verify JSON serializability
-    encoded = jsonable_encoder(analyze_res)
-    assert "comparison" in encoded
-    assert "retrieved_knowledge" in encoded
-    assert "insight" in encoded
-    assert "disclaimers" in encoded
-
-    insight = encoded["insight"]
-    print(f"Insight Status: {insight.get('status')}")
-    print(f"Insight Model:  {insight.get('model')}")
-    if insight.get("message"):
-        print(f"Insight Message: {insight.get('message')}")
-
-    sections = insight.get("sections", {})
-    required_sections = [
-        "comparison_summary",
-        "weight_reduction_analysis",
-        "cost_trade_off_analysis",
-        "material_and_manufacturing_differences",
-        "engineering_considerations",
-        "potential_advantages",
-        "risks_and_limitations",
-        "final_recommendation"
+    benchmarks = [
+        {
+            "name": "Door Panel",
+            "a_id": "CB001",
+            "b_id": "CB002",
+            "expected_wt_diff": "1.23",
+            "expected_wt_pct": "35.14",
+            "expected_cost_diff_usd": "212.5",
+            "expected_cost_inr": "18,062.50",
+            "expected_cost_pct": "25"
+        },
+        {
+            "name": "Control Arm",
+            "a_id": "CB020",
+            "b_id": "CB016",
+            "expected_wt_diff": "0.72",
+            "expected_wt_pct": "13.04",
+            "expected_cost_diff_usd": "150",
+            "expected_cost_inr": "12,750",
+            "expected_cost_pct": "11.11"
+        },
+        {
+            "name": "Seat Frame",
+            "a_id": "CB030",
+            "b_id": "CB026",
+            "expected_wt_diff": "1.20",
+            "expected_wt_pct": "13.04",
+            "expected_cost_diff_usd": "180",
+            "expected_cost_inr": "15,300",
+            "expected_cost_pct": "11.11"
+        }
     ]
-    print("\nVerifying 8 structured report sections:")
-    for sec_key in required_sections:
-        assert sec_key in sections and len(sections[sec_key]) > 0, f"Missing or empty section: {sec_key}"
-        print(f"  [OK] {sec_key}: {sections[sec_key][:70]}...")
 
-    # Verify report contains exact numbers
-    report_text = insight.get("report", "")
-    assert "1.23" in report_text, "Report must cite exact weight difference 1.23 kg"
-    assert "35.14" in report_text, "Report must cite exact weight reduction 35.14%"
-    assert "212.5" in report_text, "Report must cite exact cost difference $212.50"
-    assert "25.0" in report_text or "25%" in report_text, "Report must cite exact cost increase 25%"
+    five_concise_sections = [
+        "comparison_summary",
+        "weight_analysis",
+        "cost_analysis",
+        "material_and_manufacturing",
+        "engineering_conclusion"
+    ]
 
-    print("\nGround truth numbers verified in generated report!")
-    print("-> POST /analyze PASSED\n")
+    for bench in benchmarks:
+        print(f"\n--- Testing Benchmark: {bench['name']} ({bench['a_id']} vs {bench['b_id']}) ---")
+        req = AnalyzeRequest(component_a_id=bench["a_id"], component_b_id=bench["b_id"])
+        analyze_res = analyze(req)
+
+        encoded = jsonable_encoder(analyze_res)
+        assert "comparison" in encoded
+        assert "retrieved_knowledge" in encoded
+        assert "insight" in encoded
+        assert "disclaimers" in encoded
+
+        insight = encoded["insight"]
+        assert insight.get("status") in ("warning", "fallback", "success")
+        sections = insight.get("sections", {})
+
+        for sec_key in five_concise_sections:
+            assert sec_key in sections and len(sections[sec_key]) > 0, f"Missing or empty section: {sec_key}"
+            lines = [l for l in sections[sec_key].strip().split("\n") if l.strip()]
+            assert len(lines) <= 5, f"Section {sec_key} exceeds concise length limit: {len(lines)} lines"
+            print(f"  [OK] {sec_key}: {sections[sec_key][:60]}...")
+
+        report_text = insight.get("report", "")
+        assert bench["expected_wt_diff"] in report_text, f"Missing weight diff {bench['expected_wt_diff']} in report"
+        assert bench["expected_wt_pct"] in report_text, f"Missing weight pct {bench['expected_wt_pct']} in report"
+        assert bench["expected_cost_diff_usd"] in report_text, f"Missing cost diff USD {bench['expected_cost_diff_usd']}"
+        assert bench["expected_cost_inr"] in report_text, f"Missing cost INR {bench['expected_cost_inr']}"
+        assert bench["expected_cost_pct"] in report_text, f"Missing cost pct {bench['expected_cost_pct']}"
+
+        # Disclaimers & engineering boundaries
+        assert "validation" in report_text.lower(), "Must cite structural/fatigue/manufacturing validation"
+        assert "synthetic" in report_text.lower(), "Must include synthetic dataset disclaimer"
+        assert "85" in report_text, "Must include 85/USD conversion rate disclaimer"
+
+        # Prevent unsupported claims
+        for unsupported in ["braking distance", "driving range", "fuel efficiency", "vehicle handling"]:
+            assert unsupported not in report_text.lower(), f"Unsupported claim '{unsupported}' found in report"
+
+        print(f"  -> {bench['name']} report verified concise and numerically accurate!")
+
+    print("\n-> All 3 component benchmark comparisons PASSED\n")
 
     print("=" * 60)
     print("TEST 5: Verify POST /analyze error handling for invalid IDs")
