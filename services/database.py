@@ -10,12 +10,14 @@ Implements:
 """
 
 import os
+import re
+from pathlib import Path
 from typing import Generator, Optional
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine, Engine, text, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool, QueuePool
+from sqlalchemy.pool import StaticPool, QueuePool, NullPool
 
 
 @event.listens_for(Engine, "connect")
@@ -82,11 +84,24 @@ def build_mysql_url(
     return f"mysql+pymysql://{auth_part}@{h}:{p}/{db}?charset=utf8mb4"
 
 
+def get_ca_certificate_path() -> Optional[str]:
+    """Resolve the absolute path to the bundled TiDB / Let's Encrypt CA certificate."""
+    candidates = [
+        Path(__file__).resolve().parent.parent / "certs" / "isrgrootx1.pem",
+        Path(os.getcwd()) / "certs" / "isrgrootx1.pem",
+        Path("/var/task/certs/isrgrootx1.pem"),
+    ]
+    for cand in candidates:
+        if cand.exists():
+            return cand.resolve().as_posix()
+    return None
+
+
 def get_database_url(force_sqlite_test: bool = False) -> str:
     """
     Resolve the active database URL with strict environment validation:
-    1. In production: strictly enforces MySQL. Fails securely with RuntimeError if missing or if SQLite is attempted.
-       Never falls back to SQLite under any circumstance in production.
+    1. In production: strictly enforces remote MySQL. Fails securely with RuntimeError if missing, if SQLite is attempted,
+       or if localhost/127.0.0.1 fallback is attempted. Never falls back to SQLite or local database in production.
     2. In automated tests (non-production): allows in-memory SQLite when requested or unconfigured.
     3. In development: prefers configured MySQL URL; if unconfigured, raises descriptive error unless explicitly testing.
     """
@@ -97,21 +112,35 @@ def get_database_url(force_sqlite_test: bool = False) -> str:
         if force_sqlite_test or raw_url.startswith("sqlite"):
             raise RuntimeError(
                 "CRITICAL SECURITY CONFIGURATION ERROR: SQLite database is strictly prohibited in production. "
-                "Production requires a valid MySQL database connection."
+                "Production requires a valid remote MySQL database connection."
             )
 
         if raw_url.startswith("mysql"):
             if raw_url.startswith("mysql://"):
                 raw_url = raw_url.replace("mysql://", "mysql+pymysql://", 1)
+            # Prohibit localhost/127.0.0.1 in production
+            lower_url = raw_url.lower()
+            if "@localhost" in lower_url or "@127.0.0.1" in lower_url:
+                raise RuntimeError(
+                    "CRITICAL DATABASE CONFIGURATION ERROR: DATABASE_URL is configured with localhost/127.0.0.1. "
+                    "Production requires a cloud-accessible MySQL database (e.g. TiDB Cloud). "
+                    "Please update DATABASE_URL in Vercel Production Environment Variables."
+                )
             return raw_url
 
         mysql_url = build_mysql_url()
         if mysql_url:
+            lower_mysql = mysql_url.lower()
+            if "@localhost" in lower_mysql or "@127.0.0.1" in lower_mysql:
+                raise RuntimeError(
+                    "CRITICAL DATABASE CONFIGURATION ERROR: Localhost database is not permitted in production. "
+                    "Please configure DATABASE_URL in Vercel Production Environment Variables."
+                )
             return mysql_url
 
         raise RuntimeError(
             "CRITICAL DATABASE CONFIGURATION ERROR: MySQL database connection is required in production. "
-            "Please configure DATABASE_URL or (MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)."
+            "Please configure DATABASE_URL in Vercel Project Settings -> Environment Variables for Production."
         )
 
     # Non-production environments below:
@@ -161,6 +190,20 @@ def get_engine(database_url: Optional[str] = None, force_sqlite_test: bool = Fal
     global _ENGINE, _SESSION_FACTORY
 
     url = database_url or get_database_url(force_sqlite_test=force_sqlite_test)
+
+    # Automatically resolve relative CA certificate paths to absolute paths
+    ca_cert_path = get_ca_certificate_path()
+    if "ssl_ca=" in url:
+        match = re.search(r"ssl_ca=([^&]+)", url)
+        if match:
+            given_ca = match.group(1)
+            p_ca = Path(given_ca)
+            if not p_ca.is_absolute() and ca_cert_path:
+                url = url.replace(f"ssl_ca={given_ca}", f"ssl_ca={ca_cert_path}")
+    elif "tidbcloud.com" in url.lower() and ca_cert_path:
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}ssl_ca={ca_cert_path}&ssl_verify_cert=true"
+
     target_url = make_url(url)
 
     # If engine exists with same URL, reuse it
@@ -183,19 +226,34 @@ def get_engine(database_url: Optional[str] = None, force_sqlite_test: bool = Fal
             poolclass=StaticPool
         )
     else:
-        # Production-grade MySQL connection pool with PyMySQL
-        pool_size = int(os.getenv("DB_POOL_SIZE", "10"))
-        max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "20"))
-        pool_recycle = int(os.getenv("DB_POOL_RECYCLE", "3600"))
+        # Determine execution runtime: Serverless (Vercel / AWS Lambda) vs Standard Persistent Server
+        is_serverless = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+        use_nullpool = is_serverless or os.getenv("DB_POOL_CLASS", "").lower() == "nullpool"
 
-        _ENGINE = create_engine(
-            url,
-            poolclass=QueuePool,
-            pool_size=pool_size,
-            max_overflow=max_overflow,
-            pool_recycle=pool_recycle,
-            pool_pre_ping=True
-        )
+        if use_nullpool:
+            # NullPool for serverless execution: prevents idle socket leaks across function cold starts
+            _ENGINE = create_engine(
+                url,
+                poolclass=NullPool,
+                connect_args={"connect_timeout": 10}
+            )
+        else:
+            # Persistent server pooling (local development, test runs, long-running processes)
+            pool_size = int(os.getenv("DB_POOL_SIZE", "5"))
+            max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "5"))
+            pool_recycle = int(os.getenv("DB_POOL_RECYCLE", "300"))
+            pool_timeout = float(os.getenv("DB_POOL_TIMEOUT", "10.0"))
+
+            _ENGINE = create_engine(
+                url,
+                poolclass=QueuePool,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+                pool_recycle=pool_recycle,
+                timeout=pool_timeout,
+                pool_pre_ping=True,
+                connect_args={"connect_timeout": 10}
+            )
 
     _SESSION_FACTORY = sessionmaker(
         autocommit=False,
