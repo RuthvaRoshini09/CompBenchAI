@@ -38,6 +38,7 @@ venv.bak/
 
 # Deployment & Vercel
 .vercel/
+scratch/
 
 # Testing & Coverage
 .pytest_cache/

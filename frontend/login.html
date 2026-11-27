@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPBENCH AI | Automotive Engineering Suite Authentication</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* Strict instant view isolation before external CSS loads */
+    .auth-view { display: none !important; }
+    .auth-view.active { display: block !important; }
+  </style>
+</head>
+<body class="auth-page-body">
+
+  <div class="auth-app-layout">
+
+    <!-- ========================================================= -->
+    <!-- LEFT PANEL: BRANDING & ENGINEERING INTELLIGENCE           -->
+    <!-- ========================================================= -->
+    <aside class="auth-brand-panel">
+      <!-- Top Branding Badge -->
+      <div class="auth-brand-top">
+        <div class="auth-logo-badge">
+          <div class="auth-logo-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <div class="auth-logo-text">
+            <span class="auth-logo-title">COMPBENCH AI</span>
+            <span class="auth-logo-tag">ENGINEERING SUITE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Headline & Feature Bullets -->
+      <div class="auth-brand-content">
+        <div class="auth-brand-pill">
+          <span class="pill-dot"></span> Automotive Benchmarking &amp; Intelligence
+        </div>
+        <h1 class="auth-brand-headline">
+          Precision Component Benchmarking for Automotive Engineers
+        </h1>
+        <p class="auth-brand-subhead">
+          Enterprise subsystem trade-off analysis, automated material intelligence, and cryptographic security engineered for modern OEMs and Tier-1 suppliers.
+        </p>
+
+        <!-- Subtle Feature Checklist -->
+        <div class="auth-features-list">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="auth-feature-desc">
+              <strong>Subsystem Trade-Offs:</strong> Real-time mass, cost, and geometric comparative calculations.
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="auth-feature-desc">
+              <strong>Material Intelligence:</strong> Tensile strength, density, and thermal conductivity insights.
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="auth-feature-desc">
+              <strong>Enterprise Defense:</strong> Argon2id encryption, HttpOnly cookies, and strict session CSRF guards.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Branding Footer -->
+      <div class="auth-brand-footer">
+        <span>CompBench AI v1.0 &bull; Automotive Component Benchmarking Platform</span>
+      </div>
+    </aside>
+
+    <!-- ========================================================= -->
+    <!-- RIGHT PANEL: AUTHENTICATION FORM                          -->
+    <!-- ========================================================= -->
+    <main class="auth-form-panel">
+      <!-- Theme Switcher in Top Right -->
+      <div class="auth-top-nav">
+        <button id="theme-toggle" class="auth-theme-btn" aria-label="Toggle theme" title="Toggle Light/Dark Theme">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-toggle-text">Dark</span>
+        </button>
+      </div>
+
+      <div class="auth-card-wrapper">
+        <div class="auth-card">
+          <!-- Mobile Brand Header (Visible on mobile screens) -->
+          <div class="auth-mobile-header">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+            </div>
+            <h1>COMPBENCH AI</h1>
+            <p>Automotive Component Benchmarking</p>
+          </div>
+
+          <!-- 3 Primary Navigation Tabs -->
+          <nav class="auth-tabs" role="tablist" aria-label="Authentication Options">
+            <button type="button" class="auth-tab-btn active" id="tab-signin" role="tab" aria-selected="true" data-target="view-signin">Sign In</button>
+            <button type="button" class="auth-tab-btn" id="tab-register" role="tab" aria-selected="false" data-target="view-register">Create Account</button>
+            <button type="button" class="auth-tab-btn" id="tab-forgot" role="tab" aria-selected="false" data-target="view-forgot">Forgot Password</button>
+          </nav>
+
+          <!-- Card Header Title & Description -->
+          <div class="auth-card-intro">
+            <h2 id="auth-card-title" class="auth-card-heading">Enterprise Sign In</h2>
+            <p id="auth-card-desc" class="auth-card-subheading">Enter your authorized credentials to access the platform</p>
+          </div>
+
+          <!-- Alert Banner for Feedback -->
+          <div id="login-alert-banner" class="auth-alert-banner" style="display: none;" role="alert">
+            <svg class="alert-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span id="login-alert-text"></span>
+          </div>
+
+          <!-- --------------------------------------------------------- -->
+          <!-- FORM 1: SIGN IN                                           -->
+          <!-- --------------------------------------------------------- -->
+          <div id="view-signin" class="auth-view active">
+            <form id="signin-form" class="auth-form" novalidate>
+              <!-- Email Address -->
+              <div class="auth-field-group">
+                <label for="signin-email" class="auth-field-label">Email Address</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M22 6l-10 7L2 6"></path>
+                  </svg>
+                  <input
+                    type="email"
+                    id="signin-email"
+                    name="email"
+                    class="auth-input login-input"
+                    placeholder="admin@compbench.ai or engineer@oem.com"
+                    autocomplete="email"
+                    autofocus
+                    required
+                  >
+                </div>
+                <span id="signin-email-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Password -->
+              <div class="auth-field-group">
+                <div class="auth-links-row">
+                  <label for="signin-password" class="auth-field-label" style="margin: 0;">Password</label>
+                  <button type="button" class="auth-link" id="link-to-forgot-inline">Forgot password?</button>
+                </div>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input
+                    type="password"
+                    id="signin-password"
+                    name="password"
+                    class="auth-input login-input"
+                    placeholder="••••••••••••"
+                    autocomplete="current-password"
+                    required
+                  >
+                  <button
+                    type="button"
+                    class="btn-toggle-password"
+                    data-target="signin-password"
+                    aria-label="Toggle password visibility"
+                    title="Show / hide password"
+                  >
+                    <svg class="icon-eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="icon-eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span id="signin-password-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Sign In Submit Button -->
+              <button type="submit" id="btn-login" class="btn-auth-primary btn-login-submit">
+                <span class="btn-login-text">Sign In</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-link-center">
+              Don't have an account? <button type="button" class="auth-link" id="link-to-register">Create Account</button>
+            </div>
+          </div>
+
+          <!-- --------------------------------------------------------- -->
+          <!-- FORM 2: CREATE ACCOUNT                                    -->
+          <!-- --------------------------------------------------------- -->
+          <div id="view-register" class="auth-view" style="display: none;">
+            <form id="register-form" class="auth-form" novalidate>
+              <!-- Full Name -->
+              <div class="auth-field-group">
+                <label for="register-name" class="auth-field-label">Full Name</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input
+                    type="text"
+                    id="register-name"
+                    name="full_name"
+                    class="auth-input login-input"
+                    placeholder="e.g. Elena Rostova"
+                    autocomplete="name"
+                    required
+                  >
+                </div>
+                <span id="register-name-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Email Address -->
+              <div class="auth-field-group">
+                <label for="register-email" class="auth-field-label">Email Address</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M22 6l-10 7L2 6"></path>
+                  </svg>
+                  <input
+                    type="email"
+                    id="register-email"
+                    name="email"
+                    class="auth-input login-input"
+                    placeholder="elena.rostova@oem-aerospace.com"
+                    autocomplete="email"
+                    required
+                  >
+                </div>
+                <span id="register-email-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Password -->
+              <div class="auth-field-group">
+                <label for="register-password" class="auth-field-label">Password (Min. 8 characters)</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input
+                    type="password"
+                    id="register-password"
+                    name="password"
+                    class="auth-input login-input"
+                    placeholder="••••••••••••"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  >
+                  <button
+                    type="button"
+                    class="btn-toggle-password"
+                    data-target="register-password"
+                    aria-label="Toggle password visibility"
+                    title="Show / hide password"
+                  >
+                    <svg class="icon-eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="icon-eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span id="register-password-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Confirm Password -->
+              <div class="auth-field-group">
+                <label for="register-confirm-password" class="auth-field-label">Confirm Password</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input
+                    type="password"
+                    id="register-confirm-password"
+                    name="password_confirmation"
+                    class="auth-input login-input"
+                    placeholder="••••••••••••"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  >
+                  <button
+                    type="button"
+                    class="btn-toggle-password"
+                    data-target="register-confirm-password"
+                    aria-label="Toggle password visibility"
+                    title="Show / hide password"
+                  >
+                    <svg class="icon-eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="icon-eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span id="register-confirm-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Create Account Submit Button -->
+              <button type="submit" id="btn-register" class="btn-auth-primary btn-login-submit">
+                <span class="btn-login-text">Create Account</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-link-center">
+              Already have an account? <button type="button" class="auth-link" id="link-to-signin">Sign In</button>
+            </div>
+          </div>
+
+          <!-- --------------------------------------------------------- -->
+          <!-- FORM 3: FORGOT PASSWORD                                   -->
+          <!-- --------------------------------------------------------- -->
+          <div id="view-forgot" class="auth-view" style="display: none;">
+            <form id="forgot-form" class="auth-form" novalidate>
+              <div class="auth-field-group">
+                <label for="forgot-email" class="auth-field-label">Account Email Address</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M22 6l-10 7L2 6"></path>
+                  </svg>
+                  <input
+                    type="email"
+                    id="forgot-email"
+                    name="email"
+                    class="auth-input login-input"
+                    placeholder="elena.rostova@oem-aerospace.com"
+                    autocomplete="email"
+                    required
+                  >
+                </div>
+                <span id="forgot-email-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <button type="submit" id="btn-forgot" class="btn-auth-primary btn-login-submit">
+                <span class="btn-login-text">Send Reset Link</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-links-row" style="margin-top: 1.25rem;">
+              <button type="button" class="auth-link" id="link-forgot-to-signin">&larr; Back to Sign In</button>
+              <button type="button" class="auth-link" id="link-to-reset">Have a reset token?</button>
+            </div>
+          </div>
+
+          <!-- --------------------------------------------------------- -->
+          <!-- FORM 4: PASSWORD RESET INTERFACE                          -->
+          <!-- --------------------------------------------------------- -->
+          <div id="view-reset" class="auth-view" style="display: none;">
+            <form id="reset-form" class="auth-form" novalidate>
+              <!-- Reset Token -->
+              <div class="auth-field-group">
+                <label for="reset-token" class="auth-field-label">Password Reset Token</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 2l-2 2m-1.5 1.5L12 11l-4-4-5 5 4 4 7-7.5M16 5l3 3"></path>
+                  </svg>
+                  <input
+                    type="text"
+                    id="reset-token"
+                    name="token"
+                    class="auth-input login-input"
+                    placeholder="Paste the reset token from your email"
+                    required
+                  >
+                </div>
+                <span id="reset-token-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- New Password -->
+              <div class="auth-field-group">
+                <label for="reset-password" class="auth-field-label">New Password (Min. 8 characters)</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input
+                    type="password"
+                    id="reset-password"
+                    name="new_password"
+                    class="auth-input login-input"
+                    placeholder="••••••••••••"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  >
+                  <button
+                    type="button"
+                    class="btn-toggle-password"
+                    data-target="reset-password"
+                    aria-label="Toggle password visibility"
+                    title="Show / hide password"
+                  >
+                    <svg class="icon-eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="icon-eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span id="reset-password-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <!-- Confirm New Password -->
+              <div class="auth-field-group">
+                <label for="reset-confirm-password" class="auth-field-label">Confirm New Password</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <input
+                    type="password"
+                    id="reset-confirm-password"
+                    name="password_confirmation"
+                    class="auth-input login-input"
+                    placeholder="••••••••••••"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  >
+                  <button
+                    type="button"
+                    class="btn-toggle-password"
+                    data-target="reset-confirm-password"
+                    aria-label="Toggle password visibility"
+                    title="Show / hide password"
+                  >
+                    <svg class="icon-eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="icon-eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span id="reset-confirm-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <button type="submit" id="btn-reset" class="btn-auth-primary btn-login-submit">
+                <span class="btn-login-text">Reset Password</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-link-center">
+              <button type="button" class="auth-link" id="link-reset-to-signin">&larr; Back to Sign In</button>
+            </div>
+          </div>
+
+          <!-- --------------------------------------------------------- -->
+          <!-- FORM 5: EMAIL VERIFICATION INTERFACE                      -->
+          <!-- --------------------------------------------------------- -->
+          <div id="view-verify" class="auth-view" style="display: none;">
+            <form id="verify-form" class="auth-form" novalidate>
+              <div class="auth-field-group">
+                <label for="verify-token" class="auth-field-label">Email Verification Token</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <input
+                    type="text"
+                    id="verify-token"
+                    name="token"
+                    class="auth-input login-input"
+                    placeholder="Paste the verification token from your email"
+                    required
+                  >
+                </div>
+                <span id="verify-token-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <button type="submit" id="btn-verify" class="btn-auth-primary btn-login-submit">
+                <span class="btn-login-text">Verify Email Address</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-section-divider">or resend link</div>
+
+            <!-- Resend Verification Form -->
+            <form id="resend-form" class="auth-form" novalidate>
+              <div class="auth-field-group">
+                <label for="resend-email" class="auth-field-label">Account Email Address</label>
+                <div class="auth-input-wrapper">
+                  <svg class="input-field-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M22 6l-10 7L2 6"></path>
+                  </svg>
+                  <input
+                    type="email"
+                    id="resend-email"
+                    name="email"
+                    class="auth-input login-input"
+                    placeholder="elena.rostova@oem-aerospace.com"
+                    autocomplete="email"
+                    required
+                  >
+                </div>
+                <span id="resend-email-error" class="auth-field-error login-field-error" style="display: none;"></span>
+              </div>
+
+              <button type="submit" id="btn-resend" class="auth-secondary-btn">
+                <span class="btn-resend-text">Resend Verification Email</span>
+                <span class="btn-auth-spinner btn-login-spinner" style="display: none;" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="auth-link-center">
+              <button type="button" class="auth-link" id="link-verify-to-signin">&larr; Back to Sign In</button>
+            </div>
+          </div>
+
+          <!-- Security Footer Notice -->
+          <div class="auth-security-notice">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Argon2id Encrypted &bull; HttpOnly Cookie Protection &bull; CSRF Defended</span>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      // -------------------------------------------------------------
+      // 1. Theme Management
+      // -------------------------------------------------------------
+      const savedTheme = localStorage.getItem("compbench_theme") || "dark";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+
+      const themeToggle = document.getElementById("theme-toggle");
+      const themeIcon = document.getElementById("theme-icon");
+      const themeText = document.getElementById("theme-toggle-text");
+
+      function updateThemeUI(theme) {
+        if (theme === "dark") {
+          if (themeIcon) themeIcon.textContent = "🌙";
+          if (themeText) themeText.textContent = "Dark";
+        } else {
+          if (themeIcon) themeIcon.textContent = "☀️";
+          if (themeText) themeText.textContent = "Light";
+        }
+      }
+      updateThemeUI(savedTheme);
+
+      if (themeToggle) {
+        themeToggle.addEventListener("click", function() {
+          const current = document.documentElement.getAttribute("data-theme") || "dark";
+          const next = current === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem("compbench_theme", next);
+          updateThemeUI(next);
+        });
+      }
+
+      // -------------------------------------------------------------
+      // 2. Active Session Detection & Redirect
+      // -------------------------------------------------------------
+      async function checkActiveSession() {
+        try {
+          const response = await fetch("/api/auth/me", {
+            credentials: "include"
+          });
+          if (response.ok) {
+            const params = new URLSearchParams(window.location.search);
+            const redirectUrl = params.get("redirect") || "/";
+            const safeRedirect = redirectUrl.startsWith("/") ? redirectUrl : "/";
+            window.location.href = safeRedirect;
+          }
+        } catch (e) {
+          // Unauthenticated, proceed with displaying authentication form
+        }
+      }
+      checkActiveSession();
+
+      // -------------------------------------------------------------
+      // 3. View Management (Enforces Single Form Visibility)
+      // -------------------------------------------------------------
+      const views = {
+        "view-signin": {
+          title: "Enterprise Sign In",
+          desc: "Enter authorized credentials to access the benchmarking platform"
+        },
+        "view-register": {
+          title: "Create Account",
+          desc: "Register for an engineering account to access component benchmarking"
+        },
+        "view-forgot": {
+          title: "Forgot Password",
+          desc: "Enter your registered email address to receive a secure reset link"
+        },
+        "view-reset": {
+          title: "Reset Password",
+          desc: "Enter the reset token received via email and your new password"
+        },
+        "view-verify": {
+          title: "Verify Email Address",
+          desc: "Confirm your email address to activate your CompBench AI account"
+        }
+      };
+
+      const titleEl = document.getElementById("auth-card-title");
+      const descEl = document.getElementById("auth-card-desc");
+      const alertBanner = document.getElementById("login-alert-banner");
+      const alertText = document.getElementById("login-alert-text");
+
+      function showAlert(message, type) {
+        if (!alertBanner || !alertText) return;
+        alertText.textContent = message;
+        alertBanner.className = "auth-alert-banner " + (type || "error");
+        alertBanner.style.display = "flex";
+      }
+
+      function hideAlert() {
+        if (alertBanner) alertBanner.style.display = "none";
+      }
+
+      function clearValidationErrors() {
+        document.querySelectorAll(".auth-input").forEach(function(input) {
+          input.classList.remove("input-has-error");
+        });
+        document.querySelectorAll(".auth-field-error").forEach(function(errorEl) {
+          errorEl.textContent = "";
+          errorEl.style.display = "none";
+        });
+      }
+
+      function showFieldError(inputEl, errorEl, message) {
+        if (inputEl) inputEl.classList.add("input-has-error");
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = "block";
+        }
+      }
+
+      function setView(viewId) {
+        hideAlert();
+        clearValidationErrors();
+
+        // 1. Update tab buttons
+        document.querySelectorAll(".auth-tab-btn").forEach(function(tabBtn) {
+          const isTarget = tabBtn.getAttribute("data-target") === viewId;
+          tabBtn.classList.toggle("active", isTarget);
+          tabBtn.setAttribute("aria-selected", isTarget ? "true" : "false");
+        });
+
+        // 2. STRICT: Display ONLY the selected view, hide all others completely
+        document.querySelectorAll(".auth-view").forEach(function(viewEl) {
+          if (viewEl.id === viewId) {
+            viewEl.classList.add("active");
+            viewEl.style.display = "block";
+          } else {
+            viewEl.classList.remove("active");
+            viewEl.style.display = "none";
+          }
+        });
+
+        // 3. Update intro text
+        const meta = views[viewId] || views["view-signin"];
+        if (titleEl) titleEl.textContent = meta.title;
+        if (descEl) descEl.textContent = meta.desc;
+      }
+
+      // Tab navigation click bindings
+      document.querySelectorAll(".auth-tab-btn").forEach(function(tabBtn) {
+        tabBtn.addEventListener("click", function() {
+          const target = tabBtn.getAttribute("data-target");
+          if (target) setView(target);
+        });
+      });
+
+      // Internal cross-links
+      const linkToForgot = document.getElementById("link-to-forgot-inline");
+      if (linkToForgot) linkToForgot.addEventListener("click", function() { setView("view-forgot"); });
+
+      const linkToRegister = document.getElementById("link-to-register");
+      if (linkToRegister) linkToRegister.addEventListener("click", function() { setView("view-register"); });
+
+      const linkToSignin = document.getElementById("link-to-signin");
+      if (linkToSignin) linkToSignin.addEventListener("click", function() { setView("view-signin"); });
+
+      const linkForgotToSignin = document.getElementById("link-forgot-to-signin");
+      if (linkForgotToSignin) linkForgotToSignin.addEventListener("click", function() { setView("view-signin"); });
+
+      const linkToReset = document.getElementById("link-to-reset");
+      if (linkToReset) linkToReset.addEventListener("click", function() { setView("view-reset"); });
+
+      const linkResetToSignin = document.getElementById("link-reset-to-signin");
+      if (linkResetToSignin) linkResetToSignin.addEventListener("click", function() { setView("view-signin"); });
+
+      const linkVerifyToSignin = document.getElementById("link-verify-to-signin");
+      if (linkVerifyToSignin) linkVerifyToSignin.addEventListener("click", function() { setView("view-signin"); });
+
+      // Password visibility toggles
+      document.querySelectorAll(".btn-toggle-password").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const targetId = btn.getAttribute("data-target");
+          const inputEl = document.getElementById(targetId);
+          if (!inputEl) return;
+          const isPassword = inputEl.getAttribute("type") === "password";
+          inputEl.setAttribute("type", isPassword ? "text" : "password");
+
+          const eyeOpen = btn.querySelector(".icon-eye-open");
+          const eyeClosed = btn.querySelector(".icon-eye-closed");
+          if (eyeOpen && eyeClosed) {
+            eyeOpen.style.display = isPassword ? "none" : "inline-block";
+            eyeClosed.style.display = isPassword ? "inline-block" : "none";
+          }
+        });
+      });
+
+      // Clear field errors as user types
+      document.querySelectorAll(".auth-input").forEach(function(input) {
+        input.addEventListener("input", function() {
+          input.classList.remove("input-has-error");
+          const parentGroup = input.closest(".auth-field-group");
+          if (parentGroup) {
+            const errEl = parentGroup.querySelector(".auth-field-error");
+            if (errEl) {
+              errEl.textContent = "";
+              errEl.style.display = "none";
+            }
+          }
+          hideAlert();
+        });
+      });
+
+      // Loading state helper
+      function setButtonLoading(button, isLoading, defaultText, loadingText) {
+        if (!button) return;
+        button.disabled = isLoading;
+        const textSpan = button.querySelector(".btn-login-text, .btn-resend-text");
+        const spinner = button.querySelector(".btn-auth-spinner");
+        if (textSpan) textSpan.textContent = isLoading ? (loadingText || "Processing...") : defaultText;
+        if (spinner) spinner.style.display = isLoading ? "inline-block" : "none";
+      }
+
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      // -------------------------------------------------------------
+      // 4. Form Actions
+      // -------------------------------------------------------------
+
+      // A. SIGN IN: POST /api/auth/login
+      const signinForm = document.getElementById("signin-form");
+      const btnSignin = document.getElementById("btn-login");
+
+      if (signinForm) {
+        signinForm.addEventListener("submit", async function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const emailInput = document.getElementById("signin-email");
+          const passInput = document.getElementById("signin-password");
+          const emailErr = document.getElementById("signin-email-error");
+          const passErr = document.getElementById("signin-password-error");
+
+          const email = (emailInput.value || "").trim();
+          const password = passInput.value || "";
+
+          let hasError = false;
+          if (!email) {
+            showFieldError(emailInput, emailErr, "Email address is required.");
+            hasError = true;
+          } else if (!isValidEmail(email)) {
+            showFieldError(emailInput, emailErr, "Please enter a valid email address.");
+            hasError = true;
+          }
+
+          if (!password) {
+            showFieldError(passInput, passErr, "Password is required.");
+            hasError = true;
+          }
+
+          if (hasError) return;
+
+          setButtonLoading(btnSignin, true, "Sign In", "Signing In...");
+
+          try {
+            const response = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CompBench-CSRF": "1"
+              },
+              credentials: "include",
+              body: JSON.stringify({ email: email, password: password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === "success") {
+              // Store sanitized display profile only (NO passwords or raw session tokens)
+              if (data.user && typeof sessionStorage !== "undefined") {
+                sessionStorage.setItem("compbench_user", JSON.stringify(data.user));
+              }
+              if (data.csrf_token && typeof sessionStorage !== "undefined") {
+                sessionStorage.setItem("compbench_csrf", data.csrf_token);
+              }
+
+              showAlert("Sign in successful. Redirecting to dashboard...", "success");
+
+              const params = new URLSearchParams(window.location.search);
+              const redirectUrl = params.get("redirect") || "/";
+              const safeRedirect = redirectUrl.startsWith("/") ? redirectUrl : "/";
+
+              setTimeout(function() {
+                window.location.href = safeRedirect;
+              }, 400);
+            } else {
+              const errorDetail = data.detail || data.message || "Invalid email or password. Please verify credentials.";
+              showAlert(errorDetail, "error");
+              setButtonLoading(btnSignin, false, "Sign In");
+
+              if (response.status === 403 && errorDetail.toLowerCase().includes("not verified")) {
+                const resendInput = document.getElementById("resend-email");
+                if (resendInput) resendInput.value = email;
+              }
+            }
+          } catch (err) {
+            showAlert("Connection error. Please check your network and try again.", "error");
+            setButtonLoading(btnSignin, false, "Sign In");
+          }
+        });
+      }
+
+      // B. CREATE ACCOUNT: POST /api/auth/register
+      const registerForm = document.getElementById("register-form");
+      const btnRegister = document.getElementById("btn-register");
+
+      if (registerForm) {
+        registerForm.addEventListener("submit", async function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const nameInput = document.getElementById("register-name");
+          const emailInput = document.getElementById("register-email");
+          const passInput = document.getElementById("register-password");
+          const confirmInput = document.getElementById("register-confirm-password");
+
+          const nameErr = document.getElementById("register-name-error");
+          const emailErr = document.getElementById("register-email-error");
+          const passErr = document.getElementById("register-password-error");
+          const confirmErr = document.getElementById("register-confirm-error");
+
+          const fullName = (nameInput.value || "").trim();
+          const email = (emailInput.value || "").trim().toLowerCase();
+          const password = passInput.value || "";
+          const confirmPassword = confirmInput.value || "";
+
+          let hasError = false;
+          if (!fullName) {
+            showFieldError(nameInput, nameErr, "Full name is required.");
+            hasError = true;
+          }
+
+          if (!email) {
+            showFieldError(emailInput, emailErr, "Email address is required.");
+            hasError = true;
+          } else if (!isValidEmail(email)) {
+            showFieldError(emailInput, emailErr, "Please enter a valid email address.");
+            hasError = true;
+          }
+
+          if (!password) {
+            showFieldError(passInput, passErr, "Password is required.");
+            hasError = true;
+          } else if (password.length < 8) {
+            showFieldError(passInput, passErr, "Password must be at least 8 characters long.");
+            hasError = true;
+          }
+
+          if (!confirmPassword) {
+            showFieldError(confirmInput, confirmErr, "Please confirm your password.");
+            hasError = true;
+          } else if (password !== confirmPassword) {
+            showFieldError(confirmInput, confirmErr, "Passwords do not match.");
+            hasError = true;
+          }
+
+          if (hasError) return;
+
+          setButtonLoading(btnRegister, true, "Create Account", "Creating Account...");
+
+          try {
+            const response = await fetch("/api/auth/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                full_name: fullName,
+                email: email,
+                password: password,
+                password_confirmation: confirmPassword
+              })
+            });
+
+            const data = await response.json();
+
+            if (response.status === 201 && data.status === "success") {
+              showAlert(
+                "Account created successfully! A verification email has been sent to " + email + ". Please verify your address before signing in.",
+                "success"
+              );
+              registerForm.reset();
+              setButtonLoading(btnRegister, false, "Create Account");
+
+              const resendInput = document.getElementById("resend-email");
+              if (resendInput) resendInput.value = email;
+            } else {
+              const errorDetail = data.detail || data.message || "Registration failed. Please check input.";
+              showAlert(errorDetail, "error");
+              setButtonLoading(btnRegister, false, "Create Account");
+            }
+          } catch (err) {
+            showAlert("Connection error. Please try again.", "error");
+            setButtonLoading(btnRegister, false, "Create Account");
+          }
+        });
+      }
+
+      // C. FORGOT PASSWORD: POST /api/auth/forgot-password
+      const forgotForm = document.getElementById("forgot-form");
+      const btnForgot = document.getElementById("btn-forgot");
+
+      if (forgotForm) {
+        forgotForm.addEventListener("submit", async function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const emailInput = document.getElementById("forgot-email");
+          const emailErr = document.getElementById("forgot-email-error");
+          const email = (emailInput.value || "").trim().toLowerCase();
+
+          if (!email) {
+            showFieldError(emailInput, emailErr, "Email address is required.");
+            return;
+          } else if (!isValidEmail(email)) {
+            showFieldError(emailInput, emailErr, "Please enter a valid email address.");
+            return;
+          }
+
+          setButtonLoading(btnForgot, true, "Send Reset Link", "Sending...");
+
+          try {
+            const response = await fetch("/api/auth/forgot-password", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ email: email })
+            });
+
+            const data = await response.json();
+
+            showAlert(
+              data.message || "If an account exists with this email address, a password reset link has been sent.",
+              "success"
+            );
+            forgotForm.reset();
+            setButtonLoading(btnForgot, false, "Send Reset Link");
+          } catch (err) {
+            showAlert("Connection error. Please try again.", "error");
+            setButtonLoading(btnForgot, false, "Send Reset Link");
+          }
+        });
+      }
+
+      // D. RESET PASSWORD: POST /api/auth/reset-password
+      const resetForm = document.getElementById("reset-form");
+      const btnReset = document.getElementById("btn-reset");
+
+      if (resetForm) {
+        resetForm.addEventListener("submit", async function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const tokenInput = document.getElementById("reset-token");
+          const passInput = document.getElementById("reset-password");
+          const confirmInput = document.getElementById("reset-confirm-password");
+
+          const tokenErr = document.getElementById("reset-token-error");
+          const passErr = document.getElementById("reset-password-error");
+          const confirmErr = document.getElementById("reset-confirm-error");
+
+          const token = (tokenInput.value || "").trim();
+          const newPassword = passInput.value || "";
+          const confirmPassword = confirmInput.value || "";
+
+          let hasError = false;
+          if (!token) {
+            showFieldError(tokenInput, tokenErr, "Reset token is required.");
+            hasError = true;
+          }
+
+          if (!newPassword) {
+            showFieldError(passInput, passErr, "New password is required.");
+            hasError = true;
+          } else if (newPassword.length < 8) {
+            showFieldError(passInput, passErr, "Password must be at least 8 characters long.");
+            hasError = true;
+          }
+
+          if (!confirmPassword) {
+            showFieldError(confirmInput, confirmErr, "Please confirm your new password.");
+            hasError = true;
+          } else if (newPassword !== confirmPassword) {
+            showFieldError(confirmInput, confirmErr, "Passwords do not match.");
+            hasError = true;
+          }
+
+          if (hasError) return;
+
+          setButtonLoading(btnReset, true, "Reset Password", "Resetting...");
+
+          try {
+            const response = await fetch("/api/auth/reset-password", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                token: token,
+                new_password: newPassword,
+                password_confirmation: confirmPassword
+              })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === "success") {
+              showAlert(
+                "Password reset successfully! All previous sessions have been invalidated. Please sign in with your new password.",
+                "success"
+              );
+              resetForm.reset();
+              setButtonLoading(btnReset, false, "Reset Password");
+
+              setTimeout(function() {
+                setView("view-signin");
+              }, 1500);
+            } else {
+              showAlert(data.detail || data.message || "Failed to reset password. Token may be invalid or expired.", "error");
+              setButtonLoading(btnReset, false, "Reset Password");
+            }
+          } catch (err) {
+            showAlert("Connection error. Please try again.", "error");
+            setButtonLoading(btnReset, false, "Reset Password");
+          }
+        });
+      }
+
+      // E. VERIFY EMAIL: POST /api/auth/verify-email
+      const verifyForm = document.getElementById("verify-form");
+      const btnVerify = document.getElementById("btn-verify");
+
+      async function executeEmailVerification(tokenValue) {
+        if (!tokenValue) return;
+        setButtonLoading(btnVerify, true, "Verify Email Address", "Verifying...");
+
+        try {
+          const response = await fetch("/api/auth/verify-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ token: tokenValue })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.status === "success") {
+            showAlert("Email verified successfully! Your account is now active. Please sign in.", "success");
+            if (verifyForm) verifyForm.reset();
+            setButtonLoading(btnVerify, false, "Verify Email Address");
+
+            if (data.user && data.user.email) {
+              const signinEmail = document.getElementById("signin-email");
+              if (signinEmail) signinEmail.value = data.user.email;
+            }
+
+            setTimeout(function() {
+              setView("view-signin");
+            }, 1500);
+          } else {
+            showAlert(data.detail || data.message || "Email verification failed. The token may be expired or already used.", "error");
+            setButtonLoading(btnVerify, false, "Verify Email Address");
+          }
+        } catch (err) {
+          showAlert("Connection error during verification. Please try again.", "error");
+          setButtonLoading(btnVerify, false, "Verify Email Address");
+        }
+      }
+
+      if (verifyForm) {
+        verifyForm.addEventListener("submit", function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const tokenInput = document.getElementById("verify-token");
+          const tokenErr = document.getElementById("verify-token-error");
+          const token = (tokenInput.value || "").trim();
+
+          if (!token) {
+            showFieldError(tokenInput, tokenErr, "Verification token is required.");
+            return;
+          }
+
+          executeEmailVerification(token);
+        });
+      }
+
+      // F. RESEND VERIFICATION: POST /api/auth/resend-verification
+      const resendForm = document.getElementById("resend-form");
+      const btnResend = document.getElementById("btn-resend");
+
+      if (resendForm) {
+        resendForm.addEventListener("submit", async function(e) {
+          e.preventDefault();
+          hideAlert();
+
+          const emailInput = document.getElementById("resend-email");
+          const emailErr = document.getElementById("resend-email-error");
+          const email = (emailInput.value || "").trim().toLowerCase();
+
+          if (!email) {
+            showFieldError(emailInput, emailErr, "Email address is required.");
+            return;
+          } else if (!isValidEmail(email)) {
+            showFieldError(emailInput, emailErr, "Please enter a valid email address.");
+            return;
+          }
+
+          setButtonLoading(btnResend, true, "Resend Verification Email", "Sending...");
+
+          try {
+            const response = await fetch("/api/auth/resend-verification", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ email: email })
+            });
+
+            const data = await response.json();
+
+            showAlert(
+              data.message || "If an unverified account exists with this email address, a verification link has been sent.",
+              "success"
+            );
+            setButtonLoading(btnResend, false, "Resend Verification Email");
+          } catch (err) {
+            showAlert("Connection error. Please try again.", "error");
+            setButtonLoading(btnResend, false, "Resend Verification Email");
+          }
+        });
+      }
+
+      // -------------------------------------------------------------
+      // 5. Initial URL Parameter State Routing
+      // -------------------------------------------------------------
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = (urlParams.get("mode") || "").toLowerCase();
+      const tokenParam = (urlParams.get("token") || "").trim();
+
+      if (modeParam === "register") {
+        setView("view-register");
+      } else if (modeParam === "forgot") {
+        setView("view-forgot");
+      } else if (modeParam === "reset" || (tokenParam && modeParam !== "verify")) {
+        setView("view-reset");
+        if (tokenParam) {
+          const resetTokenInput = document.getElementById("reset-token");
+          if (resetTokenInput) resetTokenInput.value = tokenParam;
+        }
+      } else if (modeParam === "verify" || tokenParam) {
+        setView("view-verify");
+        if (tokenParam) {
+          const verifyTokenInput = document.getElementById("verify-token");
+          if (verifyTokenInput) verifyTokenInput.value = tokenParam;
+          executeEmailVerification(tokenParam);
+        }
+      } else {
+        setView("view-signin");
+      }
+
+    })();
+  </script>
+</body>
+</html>

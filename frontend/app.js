@@ -74,12 +74,108 @@ const selectionValidationMsg = document.getElementById("selection-validation-msg
 const btnToggleGuide = document.getElementById("btn-toggle-guide");
 const guidePanel = document.getElementById("guide-panel");
 
+// Authentication & Session Management
+function getCsrfToken() {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/(?:^|;\s*)compbench_csrf=([^;]+)/);
+  if (match) return decodeURIComponent(match[1]);
+  if (typeof sessionStorage !== "undefined") {
+    const cached = sessionStorage.getItem("compbench_csrf");
+    if (cached) return cached;
+  }
+  return "";
+}
+
+function getAuthHeaders(customHeaders = {}) {
+  const headers = Object.assign({}, customHeaders);
+  // Session-bound CSRF header attached to protect cookie-authenticated state-changing requests
+  const csrf = getCsrfToken();
+  if (csrf) {
+    headers["X-CompBench-CSRF"] = csrf;
+  }
+  return headers;
+}
+
+async function authFetch(url, options = {}) {
+  const opt = Object.assign({}, options);
+  opt.credentials = "include"; // Sends secure HttpOnly cookie automatically
+  opt.headers = getAuthHeaders(opt.headers);
+
+  const res = await fetch(url, opt);
+  if (res.status === 401 && typeof window !== "undefined") {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("compbench_user");
+    }
+    const currentPath = window.location.pathname;
+    const redirectUrl = currentPath && currentPath !== "/login" ? `/login?redirect=${encodeURIComponent(currentPath)}` : "/login";
+    window.location.href = redirectUrl;
+  }
+  return res;
+}
+
+async function verifySessionOrRedirect() {
+  if (typeof window === "undefined") return true;
+  try {
+    const res = await authFetch("/api/auth/me");
+    if (!res.ok) {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.removeItem("compbench_user");
+        sessionStorage.removeItem("compbench_csrf");
+      }
+      window.location.href = "/login";
+      return false;
+    }
+    const data = await res.json();
+    if (data && data.user) {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("compbench_user", JSON.stringify(data.user));
+        if (data.csrf_token) {
+          sessionStorage.setItem("compbench_csrf", data.csrf_token);
+        }
+      }
+      const emailElem = document.getElementById("user-email-display");
+      if (emailElem && data.user.email) {
+        emailElem.textContent = data.user.email;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error("Session verification error:", err);
+    window.location.href = "/login";
+    return false;
+  }
+}
+
+function setupLogoutListener() {
+  const logoutBtn = document.getElementById("btn-logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await authFetch("/api/auth/logout", {
+          method: "POST"
+        });
+      } catch (e) {
+        console.error("Logout request failed:", e);
+      } finally {
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.removeItem("compbench_user");
+          sessionStorage.removeItem("compbench_csrf");
+        }
+        window.location.href = "/login";
+      }
+    });
+  }
+}
+
 // Initialize application on DOM ready or immediately if already loaded
-function startApp() {
+async function startApp() {
   initTheme();
+  const authenticated = await verifySessionOrRedirect();
+  if (!authenticated) return;
   initDashboard();
   setupEventListeners();
   setupKpiNavigation();
+  setupLogoutListener();
 }
 
 if (document.readyState === "loading") {
@@ -170,7 +266,7 @@ function updateAllChartsTheme() {
 async function initDashboard() {
   try {
     showAlert("", false);
-    const response = await fetch("/components");
+    const response = await authFetch("/components");
     if (!response.ok) {
       throw new Error(`Failed to load components: HTTP ${response.status}`);
     }
@@ -405,11 +501,11 @@ function validateSubsystemMatch(compA, compB) {
  * Helper to automatically correct mismatched selection by aligning Component B to Component A's Part_Name.
  * Guarantees that the matched record has the exact same Part_Name.
  */
-window.autoMatchComponentB = function(targetPartName) {
+window.autoMatchComponentB = function (targetPartName) {
   const currentA = selectCompA.value;
   const targetClean = String(targetPartName || "").trim();
   const match = allComponents.find(c => String(c.Part_Name || "").trim() === targetClean && c.Part_ID !== currentA) ||
-                allComponents.find(c => String(c.Part_Name || "").trim() === targetClean);
+    allComponents.find(c => String(c.Part_Name || "").trim() === targetClean);
   if (match) {
     selectCompB.value = match.Part_ID;
     updatePreviews();
@@ -662,7 +758,7 @@ function filterAndRenderCatalog() {
 }
 
 // Global hook to allow modal catalog buttons to load components into slots
-window.loadComponentIntoBenchmark = function(partId, slot) {
+window.loadComponentIntoBenchmark = function (partId, slot) {
   if (slot === "A") {
     selectCompA.value = partId;
   } else {
@@ -704,7 +800,7 @@ async function runComparison() {
   setLoading(btnCompare, btnCompareText, true, "Benchmarking...");
 
   try {
-    const res = await fetch("/compare", {
+    const res = await authFetch("/compare", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ component_a_id: idA, component_b_id: idB })
@@ -1526,7 +1622,7 @@ async function runAnalysis() {
   setLoading(btnAnalyze, btnAnalyzeText, true, "Synthesizing AI Insights...");
 
   try {
-    const res = await fetch("/analyze", {
+    const res = await authFetch("/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ component_a_id: idA, component_b_id: idB, top_k: 3 })
