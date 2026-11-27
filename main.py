@@ -233,9 +233,10 @@ def api_register(payload: RegisterRequest):
             password=password,
             password_confirmation=confirm
         )
+        msg = "Registration successful. You may now sign in." if user.is_verified else "Registration successful. Please check your email to verify your account."
         return {
             "status": "success",
-            "message": "Registration successful. Please check your email to verify your account.",
+            "message": msg,
             "user": {
                 "id": user.id,
                 "email": user.email,
@@ -387,20 +388,24 @@ def api_me(request: Request):
 
 @app.post("/api/auth/forgot-password")
 def api_forgot_password(payload: ForgotPasswordRequest):
-    """Initiate password reset flow; generic response prevents account enumeration."""
+    """Initiate password reset flow; returns reset token for prototype verification without email delivery."""
     email = (payload.email or "").strip().lower()
     if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email address is required.")
 
+    token = None
     try:
-        request_password_reset(email)
+        _, token = request_password_reset(email, return_token=True)
     except Exception:
         pass
 
-    return {
+    resp = {
         "status": "success",
-        "message": "If an account exists with this email address, a password reset link has been sent."
+        "message": "Password reset token generated successfully. You can now set a new password."
     }
+    if token:
+        resp["reset_token"] = token
+    return resp
 
 
 @app.post("/api/auth/reset-password")

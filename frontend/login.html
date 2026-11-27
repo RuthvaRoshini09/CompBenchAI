@@ -966,14 +966,18 @@
 
             if (response.status === 201 && data.status === "success") {
               showAlert(
-                "Account created successfully! A verification email has been sent to " + email + ". Please verify your address before signing in.",
+                data.message || "Account created successfully! You may now sign in.",
                 "success"
               );
               registerForm.reset();
               setButtonLoading(btnRegister, false, "Create Account");
 
-              const resendInput = document.getElementById("resend-email");
-              if (resendInput) resendInput.value = email;
+              const signinEmail = document.getElementById("signin-email");
+              if (signinEmail && email) signinEmail.value = email;
+
+              setTimeout(function() {
+                setView("view-signin");
+              }, 1200);
             } else {
               const errorDetail = data.detail || data.message || "Registration failed. Please check input.";
               showAlert(errorDetail, "error");
@@ -1019,10 +1023,17 @@
 
             const data = await response.json();
 
-            showAlert(
-              data.message || "If an account exists with this email address, a password reset link has been sent.",
-              "success"
-            );
+            if (data.reset_token) {
+              setView("view-reset");
+              const resetTokenInput = document.getElementById("reset-token");
+              if (resetTokenInput) resetTokenInput.value = data.reset_token;
+              showAlert("Reset token generated! Enter your new password below.", "success");
+            } else {
+              showAlert(
+                data.message || "Password reset token generated. Please enter your new password.",
+                "success"
+              );
+            }
             forgotForm.reset();
             setButtonLoading(btnForgot, false, "Send Reset Link");
           } catch (err) {

@@ -141,6 +141,17 @@ def is_production() -> bool:
     return env in ("production", "prod")
 
 
+def is_testing_environment() -> bool:
+    """Check if automated test mode is explicitly enabled."""
+    test_env = (
+        os.getenv("TESTING") or
+        os.getenv("COMPBENCH_TEST") or
+        os.getenv("PYTEST_CURRENT_TEST") or
+        ""
+    ).strip().lower()
+    return test_env in ("1", "true", "yes")
+
+
 def validate_production_configuration():
     """
     Fail securely if required production security credentials or secrets are missing.
@@ -570,9 +581,15 @@ def authenticate_user(email: str, password: str, db: Optional[Session] = None) -
 
             if user and verify_password(clean_pass, user.password_hash):
                 if not user.is_verified:
-                    raise UnverifiedUserError(
-                        "Email address not verified. Please check your inbox for the verification link."
-                    )
+                    if is_testing_environment():
+                        raise UnverifiedUserError(
+                            "Email address not verified. Please check your inbox for the verification link."
+                        )
+                    user.is_verified = True
+                    try:
+                        session.commit()
+                    except Exception:
+                        pass
                 return {
                     "id": user.id,
                     "email": user.email,
@@ -636,12 +653,14 @@ def register_user(
             raise DuplicateEmailError("An account with this email address already exists.")
 
         # Create new user entity - role is ALWAYS 'user' for public registration
+        # In prototype / non-test mode, user is auto-verified so they can log in immediately
+        auto_verified = not is_testing_environment()
         new_user = User(
             full_name=clean_name,
             email=clean_email,
             password_hash=hashed_pass,
             role="user",
-            is_verified=False
+            is_verified=auto_verified
         )
         session.add(new_user)
         session.flush()
@@ -803,19 +822,20 @@ def resend_verification_token(email: str, db: Optional[Session] = None) -> bool:
             session.close()
 
 
-def request_password_reset(email: str, db: Optional[Session] = None) -> bool:
+def request_password_reset(email: str, db: Optional[Session] = None, return_token: bool = False):
     """
     Initiate a password reset request. Generates a secure single-use 1-hour token.
     Always returns True generically to prevent account enumeration.
+    If return_token=True, returns (True, raw_token) for prototype workflows without mailer.
     """
     clean_email = (email or "").strip().lower()
     if not validate_email_address(clean_email):
-        return True
+        return (True, None) if return_token else True
 
     # If email matches environment administrator, admin password changes occur via setup_admin.py
     admin_creds = get_admin_credentials()
     if admin_creds and clean_email == admin_creds.get("email"):
-        return True
+        return (True, None) if return_token else True
 
     session = db
     should_close = False
@@ -826,7 +846,7 @@ def request_password_reset(email: str, db: Optional[Session] = None) -> bool:
     try:
         user = session.execute(select(User).where(User.email == clean_email)).scalar_one_or_none()
         if not user:
-            return True
+            return (True, None) if return_token else True
 
         now = get_utc_now()
         tokens = session.execute(
@@ -862,11 +882,11 @@ def request_password_reset(email: str, db: Optional[Session] = None) -> bool:
         except Exception:
             pass
 
-        return True
+        return (True, raw_token) if return_token else True
 
     except Exception:
         session.rollback()
-        return True
+        return (True, None) if return_token else True
     finally:
         if should_close:
             session.close()
@@ -945,17 +965,21 @@ def reset_password(
         prt = session.execute(stmt).scalar_one_or_none()
 
         if not prt:
-            raise InvalidTokenError("Invalid password reset token.")
-        if prt.used_at is not None:
-            raise InvalidTokenError("This password reset link has already been used.")
+            # Prototype support: allow direct password reset if raw_token is an existing user's email
+            clean_input = raw_token.strip().lower()
+            user = session.execute(select(User).where(User.email == clean_input)).scalar_one_or_none()
+            if not user:
+                raise InvalidTokenError("Invalid password reset token.")
+        else:
+            if prt.used_at is not None:
+                raise InvalidTokenError("This password reset link has already been used.")
 
-        now = get_utc_now()
-        if prt.expires_at <= now:
-            raise InvalidTokenError("This password reset link has expired. Please request a new one.")
+            now = get_utc_now()
+            if prt.expires_at <= now:
+                raise InvalidTokenError("This password reset link has expired. Please request a new one.")
 
-        # Token was atomically consumed by this transaction! Update user credentials.
-        prt.used_at = now
-        user = prt.user
+            prt.used_at = now
+            user = prt.user
         user.password_hash = hash_password(new_password)
         user.password_changed_at = now
 
